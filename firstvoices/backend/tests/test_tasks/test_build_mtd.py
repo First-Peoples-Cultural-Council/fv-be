@@ -21,101 +21,107 @@ class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin, TransactionOnCommitMixin)
     sample_entry_title = "title_one word"
     TASK = build_index_and_calculate_scores
 
-    def get_valid_task_args(self):
-        return ("test",)
+    def setup_method(self):
+        self.site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
 
-    @staticmethod
-    def assert_async_task_logs(site, caplog):
-        assert f"Task started. Additional info: site: {site.slug}." in caplog.text
+    def get_valid_task_args(self):
+        return (str(self.site.slug),)
+
+    def assert_async_task_logs(self, caplog):
+        assert f"Task started. Additional info: site: {self.site.slug}." in caplog.text
         assert ASYNC_TASK_END_TEMPLATE in caplog.text
 
-    @pytest.fixture
-    def site(self):
-        return factories.SiteFactory.create(slug="test", visibility=Visibility.PUBLIC)
-
     @pytest.mark.django_db
-    def test_build_empty(self, site, caplog):
-        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+    def test_build_empty(self, caplog):
+        job = MTDExportJob.objects.get(
+            id=build_index_and_calculate_scores(self.site.slug)
+        )
         result = job.export_result
-        assert result["config"]["L1"] == site.title
+        assert result["config"]["L1"] == self.site.title
         assert len(result["data"]) == 0
         assert len(result["l1_index"]) == 0
         assert len(result["l2_index"]) == 0
 
-        self.assert_async_task_logs(site, caplog)
+        self.assert_async_task_logs(caplog)
 
     @pytest.mark.django_db
-    def test_missing_translation(self, site, caplog):
+    def test_missing_translation(self, caplog):
         """The entry should be skipped.
 
         Args:
             site (Union[str, Site])): site or site slug
         """
         factories.DictionaryEntryFactory.create(
-            site=site,
+            site=self.site,
             visibility=Visibility.PUBLIC,
             type=TypeOfDictionaryEntry.WORD,
             title=self.sample_entry_title,
             translations=[],
         )
-        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        job = MTDExportJob.objects.get(
+            id=build_index_and_calculate_scores(self.site.slug)
+        )
         result = job.export_result
 
-        assert result["config"]["L1"] == site.title
+        assert result["config"]["L1"] == self.site.title
         assert len(result["data"]) == 0
         assert len(result["l1_index"]) == 0
         assert len(result["l2_index"]) == 0
 
-        self.assert_async_task_logs(site, caplog)
+        self.assert_async_task_logs(caplog)
 
     @pytest.mark.django_db
-    def test_only_include_public_entries(self, site):
+    def test_only_include_public_entries(self, caplog):
         """Only public entries should be included in MTD exports.
 
         Args:
             site (Union[str, Site])): site or site slug
         """
         factories.DictionaryEntryFactory.create(
-            site=site,
+            site=self.site,
             visibility=Visibility.TEAM,
             type=TypeOfDictionaryEntry.WORD,
             title=self.sample_entry_title,
         )
         factories.DictionaryEntryFactory.create(
-            site=site,
+            site=self.site,
             visibility=Visibility.PUBLIC,
             type=TypeOfDictionaryEntry.WORD,
             title=self.sample_entry_title,
         )
-        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        job = MTDExportJob.objects.get(
+            id=build_index_and_calculate_scores(self.site.slug)
+        )
         result = job.export_result
         assert len(result["data"]) == 1
 
     @pytest.mark.django_db
-    def test_export_is_saved(self, site):
-        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+    def test_export_is_saved(self, caplog):
+        job = MTDExportJob.objects.get(
+            id=build_index_and_calculate_scores(self.site.slug)
+        )
         result = job.export_result
         # Check that the exported contents were saved
-        saved_export_format = MTDExportJob.objects.filter(site=site)
+        saved_export_format = MTDExportJob.objects.filter(site=self.site)
         assert saved_export_format.latest().export_result == result
 
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
-    def test_build_and_score(self, site, caplog):
+    def test_build_and_score(self, caplog):
         # Add some entries
 
         with self.capture_on_commit_callbacks(execute=True):
-            speaker = factories.PersonFactory.create(site=site)
-            audio = factories.AudioFactory.create(site=site)
+            speaker = factories.PersonFactory.create(site=self.site)
+            audio = factories.AudioFactory.create(site=self.site)
             factories.AudioSpeakerFactory.create(audio=audio, speaker=speaker)
-            image = factories.ImageFactory.create(site=site)
-            video = factories.VideoFactory.create(site=site)
-            parent_category = factories.CategoryFactory.create(site=site)
+            image = factories.ImageFactory.create(site=self.site)
+            video = factories.VideoFactory.create(site=self.site)
+            parent_category = factories.CategoryFactory.create(site=self.site)
             child_category = factories.CategoryFactory.create(
-                site=site, parent=parent_category
+                site=self.site, parent=parent_category
             )
             entry_one = factories.DictionaryEntryFactory.create(
-                site=site,
+                site=self.site,
                 visibility=Visibility.PUBLIC,
                 type=TypeOfDictionaryEntry.WORD,
                 title=self.sample_entry_title,
@@ -132,19 +138,21 @@ class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin, TransactionOnCommitMixin)
 
             # entry_two
             factories.DictionaryEntryFactory.create(
-                site=site,
+                site=self.site,
                 visibility=Visibility.PUBLIC,
                 type=TypeOfDictionaryEntry.PHRASE,
                 title="title_two",
             )
             entry_three = factories.DictionaryEntryFactory.create(
-                site=site,
+                site=self.site,
                 visibility=Visibility.PUBLIC,
                 type=TypeOfDictionaryEntry.PHRASE,
                 title="the word 'third' appears as the third word in this sentence",
             )
         # Build and index
-        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        job = MTDExportJob.objects.get(
+            id=build_index_and_calculate_scores(self.site.slug)
+        )
         job.refresh_from_db()
         result = job.export_result
         assert len(result["data"]) == 3
@@ -174,27 +182,27 @@ class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin, TransactionOnCommitMixin)
         assert result["data"][1]["img"] is not None
         assert len(result["data"][1]["video"]) == 1
 
-        self.assert_async_task_logs(site, caplog)
+        self.assert_async_task_logs(caplog)
 
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
-    def test_build_and_score_bad_image_data(self, site, caplog):
+    def test_build_and_score_bad_image_data(self, caplog):
         # build an entry with a bad image
-        speaker = factories.PersonFactory.create(site=site)
-        audio = factories.AudioFactory.create(site=site)
+        speaker = factories.PersonFactory.create(site=self.site)
+        audio = factories.AudioFactory.create(site=self.site)
         factories.AudioSpeakerFactory.create(audio=audio, speaker=speaker)
 
-        bad_image = factories.ImageFactory.create(site=site)
+        bad_image = factories.ImageFactory.create(site=self.site)
         bad_image.small = None
         bad_image.save()
 
-        video = factories.VideoFactory.create(site=site)
-        parent_category = factories.CategoryFactory.create(site=site)
+        video = factories.VideoFactory.create(site=self.site)
+        parent_category = factories.CategoryFactory.create(site=self.site)
         child_category = factories.CategoryFactory.create(
-            site=site, parent=parent_category
+            site=self.site, parent=parent_category
         )
         entry_one = factories.DictionaryEntryFactory.create(
-            site=site,
+            site=self.site,
             visibility=Visibility.PUBLIC,
             type=TypeOfDictionaryEntry.WORD,
             title=self.sample_entry_title,
@@ -210,7 +218,9 @@ class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin, TransactionOnCommitMixin)
         )
 
         # Build and index
-        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        job = MTDExportJob.objects.get(
+            id=build_index_and_calculate_scores(self.site.slug)
+        )
         result = job.export_result
         assert len(result["data"]) == 1
         assert result["data"][0]["word"] == self.sample_entry_title
@@ -218,17 +228,17 @@ class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin, TransactionOnCommitMixin)
         assert len(result["data"][0]["audio"]) == 1
         assert len(result["data"][0]["video"]) == 1
 
-        self.assert_async_task_logs(site, caplog)
+        self.assert_async_task_logs(caplog)
 
     @pytest.mark.django_db
     @pytest.mark.disable_thumbnail_mocks
-    def test_build_and_score_uses_first_valid_image(self, site, caplog):
-        bad_image = factories.ImageFactory.create(site=site)
+    def test_build_and_score_uses_first_valid_image(self, caplog):
+        bad_image = factories.ImageFactory.create(site=self.site)
         bad_image.small = None
         bad_image.save()
 
-        good_image = factories.ImageFactory.create(site=site)
-        good_image_small = factories.ImageFileFactory(site=site)
+        good_image = factories.ImageFactory.create(site=self.site)
+        good_image_small = factories.ImageFileFactory(site=self.site)
         good_image.small = good_image_small
         good_image.save()
 
@@ -236,14 +246,16 @@ class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin, TransactionOnCommitMixin)
         assert good_image.small is not None
 
         factories.DictionaryEntryFactory.create(
-            site=site,
+            site=self.site,
             visibility=Visibility.PUBLIC,
             type=TypeOfDictionaryEntry.WORD,
             title=self.sample_entry_title,
             related_images=[bad_image, good_image],
         )
 
-        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+        job = MTDExportJob.objects.get(
+            id=build_index_and_calculate_scores(self.site.slug)
+        )
         result = job.export_result
 
         assert len(result["data"]) == 1
@@ -253,23 +265,25 @@ class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin, TransactionOnCommitMixin)
         assert result["data"][0]["img"] is not None
 
     @pytest.mark.django_db
-    def test_old_results_removed(self, site):
-        build_index_and_calculate_scores(site.slug)
-        build_index_and_calculate_scores(site.slug)
-        job = MTDExportJob.objects.get(id=build_index_and_calculate_scores(site.slug))
+    def test_old_results_removed(self):
+        build_index_and_calculate_scores(self.site.slug)
+        build_index_and_calculate_scores(self.site.slug)
+        job = MTDExportJob.objects.get(
+            id=build_index_and_calculate_scores(self.site.slug)
+        )
         final_result = job.export_result
 
         # Check that only the most recent is in the db
-        saved_results = MTDExportJob.objects.filter(site=site)
+        saved_results = MTDExportJob.objects.filter(site=self.site)
         assert len(saved_results) == 1
         assert saved_results.latest().export_result == final_result
 
     @pytest.mark.django_db
-    def test_parallel_build_and_score_jobs_not_allowed(self, site, caplog):
-        factories.MTDExportJobFactory.create(site=site, status=JobStatus.STARTED)
+    def test_parallel_build_and_score_jobs_not_allowed(self, caplog):
+        factories.MTDExportJobFactory.create(site=self.site, status=JobStatus.STARTED)
 
         export_job = MTDExportJob.objects.get(
-            id=build_index_and_calculate_scores(site.slug)
+            id=build_index_and_calculate_scores(self.site.slug)
         )
         assert export_job.status == JobStatus.CANCELLED
         assert export_job.message == (
@@ -282,13 +296,16 @@ class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin, TransactionOnCommitMixin)
             "Job cancelled as another MTD export job is already in progress for the same site."
             in caplog.text
         )
-        self.assert_async_task_logs(site, caplog)
+        self.assert_async_task_logs(caplog)
 
     @pytest.mark.django_db
-    def test_build_and_score_exception(self, site, caplog):
-        factories.CharacterFactory.create_batch(10, site=site)
+    def test_build_and_score_exception(self, caplog):
+        factories.CharacterFactory.create_batch(10, site=self.site)
         factories.DictionaryEntryFactory.create_batch(
-            10, site=site, visibility=Visibility.PUBLIC, translations=["translation"]
+            10,
+            site=self.site,
+            visibility=Visibility.PUBLIC,
+            translations=["translation"],
         )
 
         with patch(
@@ -296,14 +313,14 @@ class TestMTDIndexAndScoreTask(IgnoreTaskResultsMixin, TransactionOnCommitMixin)
             side_effect=Exception("Mocked exception"),
         ):
             result = MTDExportJob.objects.get(
-                id=build_index_and_calculate_scores(site.slug)
+                id=build_index_and_calculate_scores(self.site.slug)
             )
 
         assert result.status == JobStatus.FAILED
         assert result.message == "Mocked exception"
-        assert "Task started. Additional info: site: test." in caplog.text
+        assert f"Task started. Additional info: site: {self.site.slug}." in caplog.text
         assert "Mocked exception" in caplog.text
-        self.assert_async_task_logs(site, caplog)
+        self.assert_async_task_logs(caplog)
 
 
 class TestCheckSitesForMTDSyncTask(IgnoreTaskResultsMixin):
@@ -311,6 +328,10 @@ class TestCheckSitesForMTDSyncTask(IgnoreTaskResultsMixin):
 
     def get_valid_task_args(self):
         return None
+
+    @pytest.fixture
+    def celery_eager_no_propagation(self, settings):
+        settings.CELERY_TASK_EAGER_PROPAGATES = False
 
     @pytest.fixture(scope="function", autouse=True)
     def mocked_mtd_build_func(self, mocker):
@@ -481,7 +502,7 @@ class TestCheckSitesForMTDSyncTask(IgnoreTaskResultsMixin):
         assert self.mocked_func.call_count == 3
 
     @pytest.mark.django_db
-    def test_check_for_sync_error(self, sites):
+    def test_check_for_sync_error(self, sites, celery_eager_no_propagation):
         factories.DictionaryEntryFactory.create(site=sites["site_one"])
         self.mocked_func.side_effect = Exception("Error")
         result = check_sites_for_mtd_sync.apply()

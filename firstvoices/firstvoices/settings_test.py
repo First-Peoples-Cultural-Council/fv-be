@@ -17,3 +17,7 @@ STORAGES = {
     },
 }
 MEDIA_ROOT = BASE_DIR / "backend" / "tests" / "tmp"  # noqa F405
+
+# Celery settings
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
