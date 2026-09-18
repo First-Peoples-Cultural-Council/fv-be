@@ -20,6 +20,7 @@ from backend.views.immersion_label_views import ImmersionLabelViewSet
 from backend.views.import_job_media_views import ImportJobMediaViewSet
 from backend.views.import_job_views import ImportJobViewSet
 from backend.views.join_request_views import JoinRequestViewSet
+from backend.views.lookup_views import LookupViewSet
 from backend.views.membership_views import MembershipViewSet
 from backend.views.mtd_data_views import MTDSitesDataViewSet
 from backend.views.organization_views import OrganizationViewSet
@@ -45,6 +46,7 @@ from backend.views.word_of_the_day_views import WordOfTheDayView
 
 ROUTER = CustomRouter()
 ROUTER.register(r"languages", LanguageViewSet, basename="language")
+ROUTER.register(r"lookup", LookupViewSet, basename="lookup")
 ROUTER.register(r"my-sites", MySitesViewSet, basename="my-sites")
 ROUTER.register(r"parts-of-speech", PartsOfSpeechViewSet, basename="partofspeech")
 ROUTER.register(r"search", SearchAllEntriesViewSet, basename="search")
