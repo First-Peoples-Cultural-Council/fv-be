@@ -13,7 +13,7 @@ from backend.search.constants import (
 from backend.serializers.base_serializers import (
     BaseSiteContentSerializer,
     ExternalSiteContentUrlMixin,
-    LinkedSiteSerializer,
+    LinkedSiteMinimalSerializer,
 )
 
 
@@ -24,7 +24,7 @@ class LookupSerializer(ExternalSiteContentUrlMixin, BaseSiteContentSerializer):
     """
 
     type = serializers.SerializerMethodField(read_only=True)
-    site = LinkedSiteSerializer(read_only=True)
+    site = LinkedSiteMinimalSerializer(read_only=True)
 
     class Meta(BaseSiteContentSerializer.Meta):
         fields = BaseSiteContentSerializer.Meta.fields + ("type",)
