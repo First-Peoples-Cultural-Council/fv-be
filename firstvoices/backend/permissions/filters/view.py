@@ -8,6 +8,8 @@ from . import base
 # NOTE: If this view filter or the predicates that form it are changed
 # the search view filter MUST also be changed to match the new logic.
 # The view filter can be found at firstvoices/apps/fv_search/permissions.py
+# NOTE: An additional view filter recreation can be found at firstvoices/backend/views/stats_views.py
+# in the get_effective_visibilities method of the StatsViewSet class.
 def is_visible_object(user):
     return (
         base.has_public_access_to_obj(user)
