@@ -62,10 +62,12 @@ def verify_no_other_jobs_running(current_job):
 
 
 def verify_no_other_import_jobs_running(current_job):
+    """ImportJob compatibility wrapper for shared running-job validation."""
     return verify_no_other_jobs_running(current_job)
 
 
 def verify_no_other_update_jobs_running(current_job):
+    """UpdateJob compatibility wrapper for shared running-job validation."""
     return verify_no_other_jobs_running(current_job)
 
 
@@ -102,10 +104,12 @@ def get_failed_rows_csv_file_for_job(job, data, error_row_numbers):
 
 
 def get_failed_rows_csv_file(import_job, data, error_row_numbers):
+    """ImportJob compatibility wrapper for shared failed-rows CSV generation."""
     return get_failed_rows_csv_file_for_job(import_job, data, error_row_numbers)
 
 
 def get_failed_rows_csv_file_for_update_job(update_job, data, error_row_numbers):
+    """UpdateJob compatibility wrapper for shared failed-rows CSV generation."""
     return get_failed_rows_csv_file_for_job(update_job, data, error_row_numbers)
 
 
@@ -128,10 +132,12 @@ def create_or_append_job_error_row(job, report, row_number, errors):
 
 
 def create_or_append_error_row(import_job, report, row_number, errors):
+    """ImportJob compatibility wrapper for shared report-row error writing."""
     return create_or_append_job_error_row(import_job, report, row_number, errors)
 
 
 def create_or_append_update_error_row(update_job, report, row_number, errors):
+    """UpdateJob compatibility wrapper for shared report-row error writing."""
     return create_or_append_job_error_row(update_job, report, row_number, errors)
 
 
@@ -217,10 +223,12 @@ def get_associated_filenames_for_job(job):
 
 
 def get_associated_filenames(import_job):
+    """ImportJob compatibility wrapper for shared associated-filename lookup."""
     return get_associated_filenames_for_job(import_job)
 
 
 def get_associated_filenames_for_update_job(update_job):
+    """UpdateJob compatibility wrapper for shared associated-filename lookup."""
     return get_associated_filenames_for_job(update_job)
 
 
@@ -297,10 +305,12 @@ def get_missing_uploaded_media_for_job(data, job):
 
 
 def get_missing_uploaded_media(data, import_job):
+    """ImportJob compatibility wrapper for shared missing-uploaded-media checks."""
     return get_missing_uploaded_media_for_job(data, import_job)
 
 
 def get_missing_uploaded_media_for_update_job(data, update_job):
+    """UpdateJob compatibility wrapper for shared missing-uploaded-media checks."""
     return get_missing_uploaded_media_for_job(data, update_job)
 
 
