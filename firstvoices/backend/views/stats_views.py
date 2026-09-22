@@ -42,7 +42,7 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
         Used rather than the view filter for better performance when calculating stats.
         """
 
-        if get_app_role(user) >= AppRole.STAFF_ADMIN:
+        if get_app_role(user) >= AppRole.STAFF:
             return [Visibility.PUBLIC, Visibility.MEMBERS, Visibility.TEAM]
 
         role = get_site_role(user, site)
@@ -182,7 +182,7 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
         # Media query sets without visibility fields
         # all media is considered visible to the user if they have access to the site
 
-        site_is_visible = bool(site.is_visible)
+        site_is_visible = bool(user_visibilities)
         audio_qs = (
             Audio.objects.filter(site=site) if site_is_visible else Audio.objects.none()
         )
