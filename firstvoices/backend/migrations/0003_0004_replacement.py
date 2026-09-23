@@ -1,6 +1,6 @@
-# This migration combined with 0131 replaces the migrations 0003 and 0004 to avoid usage of python._get_model API
+# This migration combined with 0140 replaces the migrations 0003 and 0004 to avoid usage of python._get_model API
 # which is no longer supported. This migration does all the DB operations done in 0003 and 0004, but does not
-# load any data or update any dates, which is done later in the migration 0131.
+# load any data or update any dates, which is done later in the migration 0140.
 
 from django.db import migrations, models
 from backend.models import part_of_speech

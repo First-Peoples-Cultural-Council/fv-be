@@ -5,12 +5,26 @@ from django.utils import timezone
 from django.db.models import Q
 
 def load_all_fixtures(apps, schema_editor):
+    AppJson = apps.get_model("backend", "AppJson")
+    PartOfSpeech = apps.get_model("backend", "PartOfSpeech")
+    LanguageFamily = apps.get_model("backend", "LanguageFamily")
+    Language = apps.get_model("backend", "Language")
+
     # Replacement for fixture loading previously done in 0003 and 0004.
-    call_command("loaddata", "appjson-defaults.json", app_label="backend")
-    call_command("loaddata", "default_g2p_config.json", app_label="backend")
-    call_command("loaddata", "partsOfSpeech_initial.json", app_label="backend")
-    call_command("loaddata", "language_families.json", app_label="backend")
-    call_command("loaddata", "languages.json", app_label="backend")
+    if not AppJson.objects.filter(key="default_site_menu").exists():
+        call_command("loaddata", "appjson-defaults.json", app_label="backend")
+
+    if not AppJson.objects.filter(key="default_g2p_config").exists():
+        call_command("loaddata", "default_g2p_config.json", app_label="backend")
+
+    if not PartOfSpeech.objects.exists():
+        call_command("loaddata", "partsOfSpeech_initial.json", app_label="backend")
+
+    if not LanguageFamily.objects.exists():
+        call_command("loaddata", "language_families.json", app_label="backend")
+
+    if not Language.objects.exists():
+        call_command("loaddata", "languages.json", app_label="backend")
 
 
 def populate_dates(apps, schema_editor):
