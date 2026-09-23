@@ -212,29 +212,30 @@ class BaseMediaFileImporter(BaseImporter):
                 for col in dataset.headers
             ]
 
-            if cls.get_key_col() in dataset.headers:
-                # filter out duplicate and empty filenames
-                dataset = cls.filter_rows(dataset, cls.get_key_col())
+            if cls.get_key_col() not in dataset.headers:
+                continue
 
-                job_kwargs = (
-                    {"import_job": import_job.id}
-                    if isinstance(import_job, ImportJob)
-                    else {"update_job": import_job.id}
-                )
+            # filter out duplicate and empty filenames
+            dataset = cls.filter_rows(dataset, cls.get_key_col())
 
-                import_result = cls.resource(
-                    site=import_job.site,
-                    run_as_user=import_job.run_as_user,
-                    **job_kwargs,
-                ).import_data(dataset=dataset, dry_run=dry_run)
+            job_kwargs = (
+                {"import_job": import_job.id}
+                if isinstance(import_job, ImportJob)
+                else {"update_job": import_job.id}
+            )
 
-                if import_result.totals["new"]:
-                    for row in dataset.dict:
-                        filename = row[f"{cls.column_prefix}_filename"]
-                        if filename not in filename_map:
-                            filename_map[filename] = row["id"]
+            import_result = cls.resource(
+                site=import_job.site,
+                run_as_user=import_job.run_as_user,
+                **job_kwargs,
+            ).import_data(dataset=dataset, dry_run=dry_run)
 
-                import_results.append(import_result)
+            if import_result.totals["new"]:
+                for row in dataset.dict:
+                    filename = row[f"{cls.column_prefix}_filename"]
+                    filename_map.setdefault(filename, row["id"])
+
+            import_results.append(import_result)
 
         return import_results, filename_map
 
