@@ -15,6 +15,10 @@ from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 class TestDeleteOldJoinRequestsTask(IgnoreTaskResultsMixin):
     TASK = delete_old_join_requests
 
+    @pytest.fixture
+    def celery_eager_no_propagation(self, settings):
+        settings.CELERY_TASK_EAGER_PROPAGATES = False
+
     def get_valid_task_args(self):
         return None
 
@@ -51,7 +55,7 @@ class TestDeleteOldJoinRequestsTask(IgnoreTaskResultsMixin):
         assert result.state == "SUCCESS"
         assert JoinRequest.objects.filter(id=join_request.id).exists()
 
-    def test_delete_old_join_requests_error(self, caplog):
+    def test_delete_old_join_requests_error(self, caplog, celery_eager_no_propagation):
         join_request = factories.JoinRequestFactory.create()
         join_request.created = timezone.now() - timedelta(days=31)
         join_request.save()
@@ -61,7 +65,7 @@ class TestDeleteOldJoinRequestsTask(IgnoreTaskResultsMixin):
         ):
             result = delete_old_join_requests.apply()
 
-        assert result.state == "FAILURE"
-        assert "Error deleting old join requests: Mocked exception" in caplog.text
-        assert ASYNC_TASK_START_TEMPLATE in caplog.text
-        assert ASYNC_TASK_END_TEMPLATE in caplog.text
+            assert result.state == "FAILURE"
+            assert "Error deleting old join requests: Mocked exception" in caplog.text
+            assert ASYNC_TASK_START_TEMPLATE in caplog.text
+            assert ASYNC_TASK_END_TEMPLATE in caplog.text
