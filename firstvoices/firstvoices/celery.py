@@ -3,6 +3,8 @@ import os
 
 from celery import Celery
 
+TIMEZONE = "America/Vancouver"
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "firstvoices.settings")
 
 app = Celery("firstvoices")
@@ -31,7 +33,7 @@ def setup_periodic_tasks(sender, **kwargs):
     # Create the PeriodicTask and schedule for the MTD export task if they don't exist
     if not PeriodicTask.objects.filter(name="check_sites_for_mtd_sync").exists():
         schedule, _ = CrontabSchedule.objects.get_or_create(
-            hour=21, minute=0, timezone="America/Vancouver"
+            hour=21, minute=0, timezone=TIMEZONE
         )
 
         PeriodicTask.objects.create(
@@ -48,7 +50,7 @@ def setup_periodic_tasks(sender, **kwargs):
             day_of_week="0",  # Sunday
             day_of_month="*",
             month_of_year="*",
-            timezone="America/Vancouver",
+            timezone=TIMEZONE,
         )
 
         PeriodicTask.objects.create(
@@ -63,7 +65,7 @@ def setup_periodic_tasks(sender, **kwargs):
             day_of_week="0",  # Sunday
             day_of_month="*",
             month_of_year="*",
-            timezone="America/Vancouver",
+            timezone=TIMEZONE,
         )
 
         PeriodicTask.objects.create(
