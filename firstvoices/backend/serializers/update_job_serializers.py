@@ -32,7 +32,7 @@ class UpdateJobSerializer(ImportJobSerializer):
         model = UpdateJob
         fields = ImportJobSerializer.Meta.fields
 
-    # Todo: Added mode field to indicate update mode to keep response consistent
+    # Note: Added mode field to indicate update mode to keep response consistent
     # can be removed later once both jobs have been separated.
     @staticmethod
     def get_mode(_instance):
