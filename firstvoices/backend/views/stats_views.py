@@ -7,10 +7,10 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 
 from backend.models import DictionaryEntry, Song, Story
-from backend.models.constants import Visibility
+from backend.models.constants import AppRole, Role, Visibility
 from backend.models.dictionary import TypeOfDictionaryEntry
 from backend.models.media import Audio, Document, Image, Video
-from backend.permissions.filters import view as view_filters
+from backend.permissions.utils import get_app_role, get_site_role
 from backend.serializers.stats_serializers import SiteStatsSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import site_slug_parameter
@@ -35,6 +35,25 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
         """Return a list of statistics about the specified site."""
         site_stats = self.calculate_site_stats()
         return Response(site_stats)
+
+    def get_effective_visibilities(self, site, user):
+        """
+        Determine the effective visibilities for a given site and user.
+        Used rather than the view filter for better performance when calculating stats.
+        """
+
+        if get_app_role(user) >= AppRole.STAFF:
+            return [Visibility.PUBLIC, Visibility.MEMBERS, Visibility.TEAM]
+
+        role = get_site_role(user, site)
+        if role >= Role.ASSISTANT:
+            return [Visibility.PUBLIC, Visibility.MEMBERS, Visibility.TEAM]
+        elif role >= Role.MEMBER:
+            return [Visibility.PUBLIC, Visibility.MEMBERS]
+        elif site.visibility == Visibility.PUBLIC:
+            return [Visibility.PUBLIC]
+        else:
+            return []
 
     @staticmethod
     def calculate_aggregate_stats(queryset, has_visibility=False):
@@ -144,26 +163,40 @@ class StatsViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, viewsets.V
         site = self.get_validated_site()
         user = self.request.user
 
-        visible_object_filter = view_filters.is_visible_object(user)
-        visible_site_filter = view_filters.has_visible_site(user)
+        user_visibilities = self.get_effective_visibilities(site, user)
 
         # Content query sets that have visibility fields
         words_qs = DictionaryEntry.objects.filter(
-            visible_object_filter, site=site, type=TypeOfDictionaryEntry.WORD
+            site=site, type=TypeOfDictionaryEntry.WORD, visibility__in=user_visibilities
         )
 
         phrases_qs = DictionaryEntry.objects.filter(
-            visible_object_filter, site=site, type=TypeOfDictionaryEntry.PHRASE
+            site=site,
+            type=TypeOfDictionaryEntry.PHRASE,
+            visibility__in=user_visibilities,
         )
 
-        songs_qs = Song.objects.filter(visible_object_filter, site=site)
-        stories_qs = Story.objects.filter(visible_object_filter, site=site)
+        songs_qs = Song.objects.filter(site=site, visibility__in=user_visibilities)
+        stories_qs = Story.objects.filter(site=site, visibility__in=user_visibilities)
 
-        # Media query sets
-        audio_qs = Audio.objects.filter(visible_site_filter, site=site)
-        document_qs = Document.objects.filter(visible_site_filter, site=site)
-        images_qs = Image.objects.filter(visible_site_filter, site=site)
-        video_qs = Video.objects.filter(visible_site_filter, site=site)
+        # Media query sets without visibility fields
+        # all media is considered visible to the user if they have access to the site
+
+        site_is_visible = bool(user_visibilities)
+        audio_qs = (
+            Audio.objects.filter(site=site) if site_is_visible else Audio.objects.none()
+        )
+        document_qs = (
+            Document.objects.filter(site=site)
+            if site_is_visible
+            else Document.objects.none()
+        )
+        images_qs = (
+            Image.objects.filter(site=site) if site_is_visible else Image.objects.none()
+        )
+        video_qs = (
+            Video.objects.filter(site=site) if site_is_visible else Video.objects.none()
+        )
 
         # Calculate aggregate stats from site models
         site_aggregate_stats = {
