@@ -82,7 +82,7 @@ class UpdateJobViewSet(
         "notify": "change",
     }
 
-    processing_or_complete_statuses = [
+    started_statuses = [
         UpdateJobStatus.ACCEPTED,
         UpdateJobStatus.STARTED,
         UpdateJobStatus.COMPLETE,
@@ -123,7 +123,7 @@ class UpdateJobViewSet(
                 "This job has already been queued and is currently being validated."
             )
 
-        if current_update_job.status in self.processing_or_complete_statuses:
+        if current_update_job.status in self.started_statuses:
             raise ValidationError(
                 "This job has already been confirmed and is currently being processed."
             )
