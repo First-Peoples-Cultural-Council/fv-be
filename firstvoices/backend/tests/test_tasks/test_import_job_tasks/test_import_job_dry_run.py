@@ -13,11 +13,13 @@ from backend.models.files import File
 from backend.models.import_jobs import ImportJobStatus
 from backend.tasks.import_job_tasks import validate_import_job
 from backend.tests import factories
+from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsImportMixin
 from backend.tests.utils import get_maximum_dictionary_entry_columns, get_sample_file
 
 
 @pytest.mark.django_db
-class TestImportJobDryRun:
+class TestImportJobDryRun(IgnoreTaskResultsImportMixin):
+    TASK = validate_import_job
     MIMETYPE = "text/csv"
     CSV_FILES_DIR = "test_tasks/test_import_job_tasks/resources"
 
@@ -33,11 +35,8 @@ class TestImportJobDryRun:
         )
         file = factories.FileFactory(content=file_content)
 
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
 
         validate_import_job(import_job.id)
@@ -55,11 +54,8 @@ class TestImportJobDryRun:
             mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
 
         validate_import_job(import_job.id)
@@ -86,11 +82,8 @@ class TestImportJobDryRun:
             mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
 
         validate_import_job(import_job.id)
@@ -115,11 +108,8 @@ class TestImportJobDryRun:
         )
         file = factories.FileFactory(content=file_content)
 
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
 
         validate_import_job(import_job.id)
@@ -143,11 +133,8 @@ class TestImportJobDryRun:
 
         file = factories.FileFactory(content=file_content)
 
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
 
         validate_import_job(import_job.id)
@@ -176,11 +163,8 @@ class TestImportJobDryRun:
         )
 
         file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
 
         validate_import_job(import_job.id)
@@ -203,11 +187,8 @@ class TestImportJobDryRun:
             mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
 
         validate_import_job(import_job.id)
@@ -294,11 +275,8 @@ class TestImportJobDryRun:
             mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
 
         validate_import_job(import_job.id)
@@ -330,11 +308,8 @@ class TestImportJobDryRun:
             mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
 
         validate_import_job(import_job.id)
@@ -362,11 +337,8 @@ class TestImportJobDryRun:
             mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
 
         validate_import_job(import_job.id)
@@ -394,11 +366,8 @@ class TestImportJobDryRun:
         )
         file = factories.FileFactory(content=file_content)
 
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
 
         with patch(
@@ -422,11 +391,8 @@ class TestImportJobDryRun:
             mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
         validate_import_job(import_job.id)
 
@@ -451,11 +417,8 @@ class TestImportJobDryRun:
             mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=validation_status,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=validation_status
         )
 
         validate_import_job(import_job.id)
@@ -475,12 +438,8 @@ class TestImportJobDryRun:
             mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
-            status=status,
+        import_job = self.get_import_job(
+            file=file, status=status, validation_status=ImportJobStatus.ACCEPTED
         )
 
         validate_import_job(import_job.id)
@@ -500,11 +459,8 @@ class TestImportJobDryRun:
             mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
         validate_import_job(import_job.id)
 
@@ -560,11 +516,8 @@ class TestImportJobDryRun:
             mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
 
         validate_import_job(import_job.id)
@@ -596,11 +549,8 @@ class TestImportJobDryRun:
             mimetype=self.MIMETYPE,
         )
         file = factories.FileFactory(content=file_content)
-        import_job = factories.ImportJobFactory(
-            site=self.site,
-            run_as_user=self.user,
-            data=file,
-            validation_status=ImportJobStatus.ACCEPTED,
+        import_job = self.get_import_job(
+            file=file, status=None, validation_status=ImportJobStatus.ACCEPTED
         )
 
         validate_import_job(import_job.id)

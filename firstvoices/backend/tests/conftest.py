@@ -11,12 +11,6 @@ MOCK_MEDIA_DIMENSIONS = {"width": 100, "height": 100}
 
 
 @pytest.fixture(autouse=True)
-def configure_settings(settings):
-    # Celery tasks run synchronously for testing
-    settings.CELERY_TASK_ALWAYS_EAGER = True
-
-
-@pytest.fixture(autouse=True)
 def image_thumbnail_generation_does_nothing(request, mocker):
     if "disable_thumbnail_mocks" not in request.keywords:
         mocker.patch.object(Image, "_request_thumbnail_generation", return_value=None)

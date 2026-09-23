@@ -18,7 +18,8 @@ class TestExportJob(IgnoreTaskResultsMixin):
     TASK = generate_export_csv
 
     def get_valid_task_args(self):
-        return (uuid.uuid4(),)
+        export_job = factories.ExportJobFactory.create()
+        return (str(export_job.id),)
 
     def assert_caplog_text(self, caplog, job_id):
         assert ASYNC_TASK_START_TEMPLATE % f"ExportJob id: {job_id}" in caplog.text
@@ -85,6 +86,10 @@ class TestExportJob(IgnoreTaskResultsMixin):
 class TestDeleteOldExportsTask(IgnoreTaskResultsMixin):
     TASK = delete_old_exports
 
+    @pytest.fixture
+    def celery_eager_no_propagation(self, settings):
+        settings.CELERY_TASK_EAGER_PROPAGATES = False
+
     def get_valid_task_args(self):
         return None
 
@@ -119,7 +124,7 @@ class TestDeleteOldExportsTask(IgnoreTaskResultsMixin):
         assert ASYNC_TASK_START_TEMPLATE in caplog.text
         assert ASYNC_TASK_END_TEMPLATE in caplog.text
 
-    def test_delete_old_exports_error(self, caplog):
+    def test_delete_old_exports_error(self, caplog, celery_eager_no_propagation):
         export_job = self.get_export_job_with_csv()
         export_job.created = export_job.created - timedelta(days=8)
         export_job.save()
