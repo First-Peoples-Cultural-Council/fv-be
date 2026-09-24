@@ -8,12 +8,12 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from backend.models.import_jobs import ImportJob, ImportJobMode, ImportJobStatus
+from backend.models.update_jobs import UpdateJob, UpdateJobStatus
 from backend.serializers.update_job_serializers import (
     UpdateJobDetailSerializer,
     UpdateJobSerializer,
 )
-from backend.tasks.batch_utils import verify_no_other_import_jobs_running
+from backend.tasks.batch_utils import verify_no_other_update_jobs_running
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tasks.utils.update_job_utils import verify_update_job_size_limit
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
@@ -83,24 +83,23 @@ class UpdateJobViewSet(
     }
 
     started_statuses = [
-        ImportJobStatus.ACCEPTED,
-        ImportJobStatus.STARTED,
-        ImportJobStatus.COMPLETE,
+        UpdateJobStatus.ACCEPTED,
+        UpdateJobStatus.STARTED,
+        UpdateJobStatus.COMPLETE,
     ]
 
-    started_validation_statuses = [
-        ImportJobStatus.ACCEPTED,
-        ImportJobStatus.STARTED,
+    validating_statuses = [
+        UpdateJobStatus.ACCEPTED,
+        UpdateJobStatus.STARTED,
     ]
 
     def get_queryset(self):
         site = self.get_validated_site()
-        return ImportJob.objects.filter(site=site, mode=ImportJobMode.UPDATE).order_by(
-            "-created"
-        )  # permissions are applied by the base view
+        return UpdateJob.objects.filter(site=site).order_by("-created")
+        # permissions are applied by the base view
 
     def perform_create(self, serializer):
-        serializer.save(mode=ImportJobMode.UPDATE)
+        serializer.save()
         verify_update_job_size_limit(serializer.instance)
 
     def get_serializer_class(self):
@@ -111,34 +110,34 @@ class UpdateJobViewSet(
     @action(detail=True, methods=["post"])
     def validate(self, request, site_slug=None, pk=None):
         """
-        Method to start the validation process on a given update-job.
+        Queue validation for a single update job.
         """
-        import_job_id = self.kwargs["pk"]
-        curr_job = ImportJob.objects.get(id=import_job_id, mode=ImportJobMode.UPDATE)
+        update_job_id = self.kwargs["pk"]
+        current_update_job = UpdateJob.objects.get(id=update_job_id)
 
         # Checks to ensure consistency
 
         # Verify the current job is not running or queued.
-        if curr_job.validation_status in self.started_validation_statuses:
+        if current_update_job.validation_status in self.validating_statuses:
             raise ValidationError(
                 "This job has already been queued and is currently being validated."
             )
 
-        if curr_job.status in self.started_statuses:
+        if current_update_job.status in self.started_statuses:
             raise ValidationError(
                 "This job has already been confirmed and is currently being processed."
             )
 
-        verify_no_other_import_jobs_running(curr_job)
-        verify_update_job_size_limit(curr_job)
+        verify_no_other_update_jobs_running(current_update_job)
+        verify_update_job_size_limit(current_update_job)
 
         # Queue the job for validation
-        curr_job.validation_status = ImportJobStatus.ACCEPTED
-        curr_job.save()
+        current_update_job.validation_status = UpdateJobStatus.ACCEPTED
+        current_update_job.save()
 
         transaction.on_commit(
             lambda: validate_update_job.apply_async(
-                (str(import_job_id),),
+                (str(update_job_id),),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
             )
@@ -148,33 +147,37 @@ class UpdateJobViewSet(
 
     @action(detail=True, methods=["post"])
     def confirm(self, request, site_slug=None, pk=None):
-        import_job_id = self.kwargs["pk"]
+        """Queue execution for a previously validated update job."""
+        update_job_id = self.kwargs["pk"]
 
-        curr_job = ImportJob.objects.get(id=import_job_id, mode=ImportJobMode.UPDATE)
+        current_update_job = UpdateJob.objects.get(id=update_job_id)
 
-        if curr_job.validation_status != ImportJobStatus.COMPLETE:
+        if current_update_job.validation_status != UpdateJobStatus.COMPLETE:
             raise ValidationError(
                 "Please validate the job before confirming the update job."
             )
 
-        if curr_job.status in [ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED]:
+        if current_update_job.status in [
+            UpdateJobStatus.ACCEPTED,
+            UpdateJobStatus.STARTED,
+        ]:
             raise ValidationError(
                 "This job has already been confirmed and is currently being processed."
             )
 
-        if curr_job.status == ImportJobStatus.COMPLETE:
+        if current_update_job.status == UpdateJobStatus.COMPLETE:
             raise ValidationError("This job has already finished processing.")
 
-        verify_no_other_import_jobs_running(curr_job)
-        verify_update_job_size_limit(curr_job)
+        verify_no_other_update_jobs_running(current_update_job)
+        verify_update_job_size_limit(current_update_job)
 
         # Queue the job for confirmation
-        curr_job.status = ImportJobStatus.ACCEPTED
-        curr_job.save()
+        current_update_job.status = UpdateJobStatus.ACCEPTED
+        current_update_job.save()
 
         transaction.on_commit(
             lambda: confirm_update_job.apply_async(
-                (str(import_job_id),),
+                (str(update_job_id),),
                 link_error=link_error_handler.s(),
                 ignore_result=True,
             )
@@ -183,7 +186,7 @@ class UpdateJobViewSet(
         return Response(status=status.HTTP_202_ACCEPTED)
 
     def perform_destroy(self, instance):
-        if instance.validation_status in self.started_validation_statuses:
+        if instance.validation_status in self.validating_statuses:
             raise ValidationError(
                 f"This job cannot be deleted as it is being validated. "
                 f"This job has the validation status: {instance.status}"
@@ -193,12 +196,13 @@ class UpdateJobViewSet(
 
     @action(detail=True, methods=["post"])
     def notify(self, request, site_slug=None, pk=None):
+        """Mark a validated update job as ready for support processing."""
 
-        import_job_id = self.kwargs["pk"]
+        update_job_id = self.kwargs["pk"]
         return notify_job_ready(
             request=request,
             site_slug=site_slug,
-            job_id=import_job_id,
+            job_id=update_job_id,
             detail_view_name="api:updatejob-detail",
             already_ready_message="The update job is already marked ready for processing.",
             requires_validation_message="Please validate the job before marking it ready for processing.",
@@ -211,4 +215,6 @@ class UpdateJobViewSet(
                 "URL: {url}\n"
             ),
             support_user_email=SUPPORT_USER_EMAIL,
+            job_model=UpdateJob,
+            job_status_model=UpdateJobStatus,
         )

@@ -492,19 +492,23 @@ class BaseImportUpdateEndpoints(
         )
         self.client.force_authenticate(user=user)
 
-        import_job = self.create_minimal_instance(site)
+        batch_job = self.create_minimal_instance(site)
+
+        media_parent_fk = (
+            {"import_job": batch_job}
+            if isinstance(batch_job, ImportJob)
+            else {"update_job": batch_job}
+        )
 
         # Add media files to the job
-        image = factories.ImageFileFactory(import_job=import_job)
-        video = factories.VideoFileFactory(import_job=import_job)
-        audio = factories.FileFactory(import_job=import_job, mimetype="audio/mpeg")
-        document = factories.FileFactory(
-            import_job=import_job, mimetype="application/pdf"
-        )
+        image = factories.ImageFileFactory(**media_parent_fk)
+        video = factories.VideoFileFactory(**media_parent_fk)
+        audio = factories.FileFactory(**media_parent_fk, mimetype="audio/mpeg")
+        document = factories.FileFactory(**media_parent_fk, mimetype="application/pdf")
 
         response = self.client.get(
             self.get_detail_endpoint(
-                key=self.get_lookup_key(import_job), site_slug=site.slug
+                key=self.get_lookup_key(batch_job), site_slug=site.slug
             )
         )
 
