@@ -10,18 +10,6 @@ services:
     ports:
       - "15672:15672"
       - "5672:5672"
-  minio:
-    image: quay.io/minio/minio:RELEASE.2023-04-07T05-28-58Z
-    hostname: "minio"
-    volumes:
-      - minio_data:/export
-    environment:
-      MINIO_ROOT_USER: e806116643d5ea1cff889f16d93a4a44
-      MINIO_ROOT_PASSWORD: 1adc661de44da5022326239d150086b4
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    command: "server /export"
   elastic:
     image: elasticsearch:8.18.2
     hostname: "elastic"
@@ -38,4 +26,3 @@ services:
       - "6379:6379"
 volumes:
   postgres_data:
-  minio_data:
