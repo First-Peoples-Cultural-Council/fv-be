@@ -4,7 +4,7 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.utils import timezone
 
-from backend.models import JoinRequest
+from backend.models.join_request import JoinRequest, JoinRequestStatus
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 
 
@@ -19,7 +19,14 @@ def delete_old_join_requests(self):
     thirty_days_ago = timezone.now() - timedelta(days=30)
 
     try:
-        old_join_requests = JoinRequest.objects.filter(created__lte=thirty_days_ago)
+        old_join_requests = JoinRequest.objects.filter(
+            created__lte=thirty_days_ago,
+            status__in=[
+                JoinRequestStatus.CANCELLED,
+                JoinRequestStatus.IGNORED,
+                JoinRequestStatus.APPROVED,
+            ],
+        )
 
         if old_join_requests.exists():
             logger.info(f"Deleting {old_join_requests.count()} old join requests.")

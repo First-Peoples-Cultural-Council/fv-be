@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 from django.utils import timezone
 
-from backend.models import JoinRequest
+from backend.models.join_request import JoinRequest, JoinRequestStatus
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from backend.tasks.join_request_tasks import delete_old_join_requests
 from backend.tests import factories
@@ -33,8 +33,16 @@ class TestDeleteOldJoinRequestsTask(IgnoreTaskResultsMixin):
         assert ASYNC_TASK_START_TEMPLATE in caplog.text
         assert ASYNC_TASK_END_TEMPLATE in caplog.text
 
-    def test_deletes_join_requests_older_than_30_days(self, caplog):
-        join_request = factories.JoinRequestFactory.create()
+    @pytest.mark.parametrize(
+        "status",
+        [
+            JoinRequestStatus.CANCELLED,
+            JoinRequestStatus.IGNORED,
+            JoinRequestStatus.APPROVED,
+        ],
+    )
+    def test_deletes_join_requests_older_than_30_days(self, caplog, status):
+        join_request = factories.JoinRequestFactory.create(status=status)
         factories.JoinRequestReasonFactory.create(join_request=join_request)
         join_request.created = timezone.now() - timedelta(days=31)
         join_request.save()
@@ -47,8 +55,29 @@ class TestDeleteOldJoinRequestsTask(IgnoreTaskResultsMixin):
         assert ASYNC_TASK_START_TEMPLATE in caplog.text
         assert ASYNC_TASK_END_TEMPLATE in caplog.text
 
-    def test_keeps_join_requests_created_within_30_days(self):
-        join_request = factories.JoinRequestFactory.create()
+    @pytest.mark.parametrize(
+        "status",
+        [
+            JoinRequestStatus.CANCELLED,
+            JoinRequestStatus.IGNORED,
+            JoinRequestStatus.APPROVED,
+        ],
+    )
+    def test_keeps_join_requests_created_within_30_days(self, status):
+        join_request = factories.JoinRequestFactory.create(status=status)
+
+        result = delete_old_join_requests.apply()
+
+        assert result.state == "SUCCESS"
+        assert JoinRequest.objects.filter(id=join_request.id).exists()
+
+    @pytest.mark.parametrize(
+        "status", [JoinRequestStatus.PENDING, JoinRequestStatus.REJECTED]
+    )
+    def test_keeps_old_join_requests_with_non_deletable_status(self, status):
+        join_request = factories.JoinRequestFactory.create(status=status)
+        join_request.created = timezone.now() - timedelta(days=31)
+        join_request.save()
 
         result = delete_old_join_requests.apply()
 
@@ -56,7 +85,9 @@ class TestDeleteOldJoinRequestsTask(IgnoreTaskResultsMixin):
         assert JoinRequest.objects.filter(id=join_request.id).exists()
 
     def test_delete_old_join_requests_error(self, caplog, celery_eager_no_propagation):
-        join_request = factories.JoinRequestFactory.create()
+        join_request = factories.JoinRequestFactory.create(
+            status=JoinRequestStatus.APPROVED
+        )
         join_request.created = timezone.now() - timedelta(days=31)
         join_request.save()
 
