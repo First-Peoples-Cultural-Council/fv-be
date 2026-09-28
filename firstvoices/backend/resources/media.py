@@ -32,12 +32,7 @@ class BaseMediaResource(SiteContentResource):
 
         update_job_id = row.get("update_job")
         if not update_job_id:
-            update_job_id = (
-                self.update_job.id
-                if isinstance(self.update_job, UpdateJob)
-                else self.update_job
-            )
-
+            update_job_id = self.update_job.id
         return {"update_job__id": str(update_job_id)}
 
     def before_import(self, dataset, **kwargs):
