@@ -1,6 +1,7 @@
 import pytest
 
-from backend.models import ImportJobMode
+from backend.models.update_jobs import UpdateJob
+from backend.tests import factories
 from backend.tests.test_apis.base.import_update_jobs.base_confirm_action_test import (
     BaseImportUpdateJobConfirmAction,
 )
@@ -10,7 +11,9 @@ from backend.tests.test_apis.base.import_update_jobs.base_confirm_action_test im
 class TestUpdateJobConfirmAction(BaseImportUpdateJobConfirmAction):
     API_CONFIRM_ACTION = "api:updatejob-confirm"
     SAMPLE_FILE_PATH = "update_job/all_valid_columns.csv"
-    JOB_MODE = ImportJobMode.UPDATE
+    JOB_MODE = None
+    JOB_MODEL = UpdateJob
+    JOB_FACTORY = factories.UpdateJobFactory
     COMPLETED_ERROR_MESSAGE = "This job has already finished processing."
     STARTED_ERROR_MESSAGE = (
         "This job has already been confirmed and is currently being processed."

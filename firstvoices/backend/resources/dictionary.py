@@ -7,6 +7,7 @@ from backend.models.dictionary import (
     ExternalDictionaryEntrySystem,
     TypeOfDictionaryEntry,
 )
+from backend.models.update_jobs import UpdateJob
 from backend.resources.base import (
     ControlledSiteContentResource,
     RelatedMediaResourceMixin,
@@ -83,6 +84,11 @@ class DictionaryEntryResource(
         column_name="import_job",
         attribute="import_job",
         widget=widgets.ForeignKeyWidget(ImportJob),
+    )
+    update_job = fields.Field(
+        column_name="update_job",
+        attribute="update_job",
+        widget=widgets.ForeignKeyWidget(UpdateJob),
     )
 
     external_system = fields.Field(
@@ -173,14 +179,16 @@ class DictionaryEntryResource(
             raise ImportError()
 
         instance_loader.get_instance(row)
-        import_job = ImportJob.objects.get(id=self.import_job)
-        site = import_job.site
+        site = self.site
+        is_update_mode = isinstance(self.job, UpdateJob) or (
+            isinstance(self.job, ImportJob) and self.job.mode == ImportJobMode.UPDATE
+        )
 
         # Raise errors for invalid type/visibility
         self.raise_invalid_value_errors(row)
 
         # Raise errors for update data
-        if import_job.mode == ImportJobMode.UPDATE:
+        if is_update_mode:
             self.raise_row_update_errors(row, site)
 
         return super().get_or_init_instance(instance_loader, row)
@@ -250,7 +258,7 @@ class DictionaryEntryResource(
         # Prevent duplicate updates within the same import
         if str(row.get("id")) in self._processed_ids:
             raise ImportError(
-                f"Duplicate entry with id {row.get('id')} found in import."
+                f"Duplicate entry with id {row.get('id')} found in update data."
             )
         self._processed_ids.add(str(row.get("id")))
 

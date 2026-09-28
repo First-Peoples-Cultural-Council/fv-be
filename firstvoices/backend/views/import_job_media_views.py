@@ -9,6 +9,7 @@ from rest_framework.status import HTTP_202_ACCEPTED
 
 from backend.models import ImportJob
 from backend.models.media import SUPPORTED_FILETYPES, File, ImageFile, VideoFile
+from backend.models.update_jobs import UpdateJob
 from backend.tasks.batch_utils import get_associated_filenames
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
@@ -38,19 +39,28 @@ class ImportJobMediaViewSet(
 
     parser_classes = [parsers.MultiPartParser]
 
-    def get_validated_import_job(self):
-        import_job_id = self.kwargs["importjob_pk"]
-        import_jobs = ImportJob.objects.filter(id=import_job_id)
+    @staticmethod
+    def _get_job_relation_kwargs(job):
+        if isinstance(job, ImportJob):
+            return {"import_job": job}
+        if isinstance(job, UpdateJob):
+            return {"update_job": job}
 
-        if not import_jobs.exists():
+        raise ValidationError(f"Unsupported job type for media upload: {type(job)}")
+
+    def get_validated_batch_job(self):
+        batch_job_id = self.kwargs["importjob_pk"]
+        batch_jobs = ImportJob.objects.filter(id=batch_job_id)
+
+        if not batch_jobs.exists():
             raise Http404
 
-        import_job = import_jobs.first()
+        batch_job = batch_jobs.first()
 
         # Check permissions on the site first
-        perm = import_job.get_perm("view")
-        if self.request.user.has_perm(perm, import_job):
-            return import_job
+        perm = batch_job.get_perm("view")
+        if self.request.user.has_perm(perm, batch_job):
+            return batch_job
         else:
             raise PermissionDenied
 
@@ -74,10 +84,10 @@ class ImportJobMediaViewSet(
         user = self.request.user
         site = self.get_validated_site()
 
-        import_job = self.get_validated_import_job()
-        if import_job.status is not None:
+        batch_job = self.get_validated_batch_job()
+        if batch_job.status is not None:
             raise ValidationError(
-                f"Can't add media after an import job has started. This job already has status: {import_job.status}."
+                f"Can't add media after an import job has started. This job already has status: {batch_job.status}."
             )
 
         request_files = self.request.FILES.getlist("file")
@@ -95,21 +105,22 @@ class ImportJobMediaViewSet(
             )
 
         #  Check for duplicate filenames compared with already uploaded files
-        uploaded_filenames = get_associated_filenames(import_job)
+        uploaded_filenames = get_associated_filenames(batch_job)
 
         if len(set(filenames).intersection(uploaded_filenames)) > 0:
             raise ValidationError(
                 "You cannot upload a file with the same name as one already uploaded to this import job."
             )
 
+        relation_kwargs = self._get_job_relation_kwargs(batch_job)
         for file in request_files:
             filetype = self.get_filetype(file)
             new_file = filetype(
                 content=file,
                 site=site,
-                import_job=import_job,
                 created_by=user,
                 last_modified_by=user,
+                **relation_kwargs,
             )
             new_file.save()
 

@@ -3,10 +3,12 @@ from django.http import Http404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 
-from backend.models import ImportJob, ImportJobMode
+from backend.models.update_jobs import UpdateJob
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
-from backend.views.import_job_media_views import ImportJobMediaViewSet
+from backend.views.import_job_media_views import (
+    ImportJobMediaViewSet as BatchJobMediaViewSet,
+)
 
 
 @extend_schema_view(
@@ -24,21 +26,19 @@ from backend.views.import_job_media_views import ImportJobMediaViewSet
     ),
     list=extend_schema(methods=["GET"], exclude=True),
 )
-class UpdateJobMediaViewSet(ImportJobMediaViewSet):
-    def get_validated_import_job(self):
-        update_job_id = self.kwargs["updatejob_pk"]
-        import_jobs = ImportJob.objects.filter(
-            id=update_job_id, mode=ImportJobMode.UPDATE
-        )
+class UpdateJobMediaViewSet(BatchJobMediaViewSet):
+    def get_validated_batch_job(self):
+        batch_job_id = self.kwargs["updatejob_pk"]
+        batch_jobs = UpdateJob.objects.filter(id=batch_job_id)
 
-        if not import_jobs.exists():
+        if not batch_jobs.exists():
             raise Http404
 
-        import_job = import_jobs.first()
+        batch_job = batch_jobs.first()
 
         # Check permissions on the site first
-        perm = import_job.get_perm("view")
-        if self.request.user.has_perm(perm, import_job):
-            return import_job
+        perm = batch_job.get_perm("view")
+        if self.request.user.has_perm(perm, batch_job):
+            return batch_job
         else:
             raise PermissionDenied

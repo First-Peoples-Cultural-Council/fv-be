@@ -124,12 +124,15 @@ def notify_job_ready(
     subject,
     message_template,
     support_user_email,
+    job_model=ImportJob,
+    job_status_model=ImportJobStatus,
 ):
-    curr_job = ImportJob.objects.get(id=job_id)
-    if curr_job.status == ImportJobStatus.READY_FOR_IMPORT:
+    """Mark a validated import/update job as ready and notify support."""
+    job_instance = job_model.objects.get(id=job_id)
+    if job_instance.status == job_status_model.READY_FOR_IMPORT:
         raise ValidationError(already_ready_message)
 
-    if curr_job.validation_status != ImportJobStatus.COMPLETE:
+    if job_instance.validation_status != job_status_model.COMPLETE:
         raise ValidationError(requires_validation_message)
 
     url = request.build_absolute_uri(
@@ -148,9 +151,9 @@ def notify_job_ready(
 
     try:
         send_email_task.apply_async((subject, message, [support_user_email]))
-        import_job = ImportJob.objects.get(id=job_id)
-        import_job.status = ImportJobStatus.READY_FOR_IMPORT
-        import_job.save()
+        refreshed_job = job_model.objects.get(id=job_id)
+        refreshed_job.status = job_status_model.READY_FOR_IMPORT
+        refreshed_job.save()
     except ConnectionError as e:
         error_message = f"An error occurred: {e}. Please reach out to support to resolve this issue."
         raise ConnectionError(error_message)

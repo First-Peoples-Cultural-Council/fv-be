@@ -212,23 +212,30 @@ class BaseMediaFileImporter(BaseImporter):
                 for col in dataset.headers
             ]
 
-            if cls.get_key_col() in dataset.headers:
-                # filter out duplicate and empty filenames
-                dataset = cls.filter_rows(dataset, cls.get_key_col())
+            if cls.get_key_col() not in dataset.headers:
+                continue
 
-                import_result = cls.resource(
-                    site=import_job.site,
-                    run_as_user=import_job.run_as_user,
-                    import_job=import_job.id,
-                ).import_data(dataset=dataset, dry_run=dry_run)
+            # filter out duplicate and empty filenames
+            dataset = cls.filter_rows(dataset, cls.get_key_col())
 
-                if import_result.totals["new"]:
-                    for row in dataset.dict:
-                        filename = row[f"{cls.column_prefix}_filename"]
-                        if filename not in filename_map:
-                            filename_map[filename] = row["id"]
+            job_kwargs = (
+                {"import_job": import_job.id}
+                if isinstance(import_job, ImportJob)
+                else {"update_job": import_job.id}
+            )
 
-                import_results.append(import_result)
+            import_result = cls.resource(
+                site=import_job.site,
+                run_as_user=import_job.run_as_user,
+                **job_kwargs,
+            ).import_data(dataset=dataset, dry_run=dry_run)
+
+            if import_result.totals["new"]:
+                for row in dataset.dict:
+                    filename = row[f"{cls.column_prefix}_filename"]
+                    filename_map.setdefault(filename, row["id"])
+
+            import_results.append(import_result)
 
         return import_results, filename_map
 
@@ -577,7 +584,7 @@ class DictionaryEntryImporter(BaseImporter):
         dictionary_entry_update_result = DictionaryEntryResource(
             site=update_job.site,
             run_as_user=update_job.run_as_user,
-            import_job=update_job.id,
+            update_job=update_job.id,
             missing_uploaded_media=missing_uploaded_media,
             missing_referenced_media=missing_referenced_media,
             missing_entries=missing_entries,

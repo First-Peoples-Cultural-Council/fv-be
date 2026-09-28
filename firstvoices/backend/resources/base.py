@@ -9,6 +9,7 @@ from backend.models.constants import Visibility
 from backend.models.import_jobs import ImportJob, ImportJobMode
 from backend.models.media import Audio, Image, Video
 from backend.models.sites import Site
+from backend.models.update_jobs import UpdateJob
 from backend.resources.utils.import_export_widgets import (
     ArrayOfStringsWidget,
     ChoicesWidget,
@@ -34,20 +35,57 @@ class BaseResource(resources.ModelResource):
         widget=UserForeignKeyWidget(),
     )
 
-    def __init__(self, site=None, run_as_user=None, import_job=None, **kwargs):
+    def __init__(
+        self,
+        site=None,
+        run_as_user=None,
+        import_job=None,
+        update_job=None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.site = site
         self.run_as_user = run_as_user
         self.import_job = import_job
-        self.created_by = (
-            ImportJob.objects.get(id=import_job).created_by if import_job else ""
-        )
+        self.update_job = update_job
+        self.job = self.get_job_instance(import_job=import_job, update_job=update_job)
+        self.created_by = self.job.created_by if self.job else ""
+
+    @staticmethod
+    def _get_job_id(job):
+        return job.id if hasattr(job, "id") else job
+
+    @classmethod
+    def get_import_job_instance(cls, import_job):
+        if isinstance(import_job, ImportJob):
+            return import_job
+        return ImportJob.objects.get(id=cls._get_job_id(import_job))
+
+    @classmethod
+    def get_update_job_instance(cls, update_job):
+        if isinstance(update_job, UpdateJob):
+            return update_job
+        return UpdateJob.objects.get(id=cls._get_job_id(update_job))
+
+    @classmethod
+    def get_job_instance(cls, import_job=None, update_job=None):
+        if update_job is not None:
+            return cls.get_update_job_instance(update_job)
+
+        if import_job is not None:
+            return cls.get_import_job_instance(import_job)
+
+        return None
 
     def before_import(self, dataset, **kwargs):
         # Adding required columns, since these will not be present in the headers
         # ID is only added if the import job mode is not update
-        import_job = ImportJob.objects.get(id=self.import_job)
-        if import_job.mode != ImportJobMode.UPDATE:
+        is_update_job = isinstance(self.job, UpdateJob)
+        is_import_update_mode = (
+            isinstance(self.job, ImportJob) and self.job.mode == ImportJobMode.UPDATE
+        )
+
+        if not is_update_job and not is_import_update_mode:
             dataset.append_col(lambda x: str(uuid.uuid4()), header="id")
 
         dataset.append_col(lambda x: str(self.site.id), header="site")
@@ -56,7 +94,14 @@ class BaseResource(resources.ModelResource):
         dataset.append_col(
             lambda x: str(self.created_by), header="system_last_modified_by"
         )
-        dataset.append_col(lambda x: str(self.import_job), header="import_job")
+        if is_update_job:
+            dataset.append_col(
+                lambda x: str(self._get_job_id(self.update_job)), header="update_job"
+            )
+        else:
+            dataset.append_col(
+                lambda x: str(self._get_job_id(self.import_job)), header="import_job"
+            )
 
     def import_row(self, row, instance_loader, **kwargs):
         # Marking erroneous and invalid rows as skipped, then clearing the errors and validation_errors

@@ -5,7 +5,7 @@ from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 
 from backend.models.constants import Role, Visibility
-from backend.models.import_jobs import ImportJobStatus
+from backend.models.import_jobs import ImportJob, ImportJobStatus
 from backend.tests import factories
 from backend.tests.factories import ImportJobFactory
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
@@ -21,6 +21,8 @@ class BaseImportUpdateJobConfirmAction(BaseSiteContentApiTest):
     COMPLETED_ERROR_MESSAGE = None
     STARTED_ERROR_MESSAGE = None
     NOT_VALIDATED_ERROR_MESSAGE = None
+    JOB_FACTORY = ImportJobFactory
+    JOB_MODEL = ImportJob
 
     def create_minimal_instance(self, site, visibility):
         return {}
@@ -29,12 +31,12 @@ class BaseImportUpdateJobConfirmAction(BaseSiteContentApiTest):
         return {}
 
     def get_job_mode_kwargs(self):
-        if self.JOB_MODE is None:
+        if self.JOB_MODE is None or self.JOB_MODEL is not ImportJob:
             return {}
         return {"mode": self.JOB_MODE}
 
     def create_job(self, site, status=None, validation_status=ImportJobStatus.COMPLETE):
-        return ImportJobFactory(
+        return self.JOB_FACTORY(
             site=site,
             data=factories.FileFactory(
                 content=get_sample_file(self.SAMPLE_FILE_PATH, "text/csv")
