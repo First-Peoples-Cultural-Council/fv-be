@@ -21,7 +21,7 @@ class TestExportJobAPI(
 
     model = ExportJob
 
-    @pytest.fixture(scope="function")
+    @pytest.fixture
     def mock_dictionary_cleanup_task(self, mocker):
         self.mocked_func = mocker.patch(
             "backend.tasks.dictionary_cleanup_tasks.cleanup_dictionary.apply_async"

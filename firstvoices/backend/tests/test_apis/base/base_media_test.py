@@ -947,7 +947,7 @@ class BaseMediaApiTest(
 
 
 class BaseVisualMediaAPITest(BaseMediaApiTest):
-    @pytest.fixture()
+    @pytest.fixture
     def disable_celery(self, settings):
         # Sets the celery tasks to run synchronously for testing
         settings.CELERY_TASK_ALWAYS_EAGER = True
