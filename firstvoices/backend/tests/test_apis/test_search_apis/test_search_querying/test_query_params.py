@@ -1190,10 +1190,8 @@ class TestWordLengthParams:
         search_query = get_search_query(user=AnonymousUser())
         search_query = search_query.to_dict()
 
-        assert (
-            "lte" not in search_query["query"]["bool"]
-            and "gte" not in search_query["query"]["bool"]
-        )
+        assert "lte" not in search_query["query"]["bool"]
+        assert "gte" not in search_query["query"]["bool"]
 
     def test_min_words(self):
         min_words = 2
