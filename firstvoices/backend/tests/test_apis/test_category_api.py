@@ -688,7 +688,8 @@ class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
 
         parent_obj = find_object_by_id(data["results"], parent.id)
         child_obj = find_object_by_id(data["results"], child.id)
-        assert parent_obj is not None and child_obj is not None
+        assert parent_obj is not None
+        assert child_obj is not None
 
         assert parent_obj["parent"] is None
         assert parent_obj["parentTitle"] == ""

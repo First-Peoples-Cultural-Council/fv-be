@@ -11,16 +11,15 @@ from backend.tests import factories
 
 
 @pytest.fixture
-def get_tmp_output_dir(request) -> str:
+def get_tmp_output_dir() -> str:
     output_dir = os.path.join(os.getcwd(), "output")
 
     # Function to clear the resources
     def remove_output():
         shutil.rmtree(output_dir, ignore_errors=True)
 
-    request.addfinalizer(remove_output)
-
-    return output_dir
+    yield output_dir
+    remove_output()
 
 
 @pytest.mark.django_db

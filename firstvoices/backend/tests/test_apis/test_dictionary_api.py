@@ -827,10 +827,8 @@ class TestDictionaryEndpoint(
         assert response_data["externalSystemEntryId"] == "abc-123"
 
         entry_in_db = DictionaryEntry.objects.get(id=response_data["id"])
-        assert (
-            entry_in_db.external_system
-            and entry_in_db.external_system.title == "External One"
-        )
+        assert entry_in_db.external_system is not None
+        assert entry_in_db.external_system.title == "External One"
         assert entry_in_db.external_system_entry_id == "abc-123"
 
     @pytest.mark.django_db

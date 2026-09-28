@@ -602,10 +602,13 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
         # Verifying only media included in csv are present after import job completion
         file_ids = list(files.values_list("id", flat=True))
 
-        assert images.count() == 1 and images[0].id == image_in_csv.id
+        assert images.count() == 1
+        assert images[0].id == image_in_csv.id
         assert files.count() == 2
-        assert audio_in_csv.id in file_ids and doc_in_csv.id in file_ids
-        assert videos.count() == 1 and videos[0].id == video_in_csv.id
+        assert audio_in_csv.id in file_ids
+        assert doc_in_csv.id in file_ids
+        assert videos.count() == 1
+        assert videos[0].id == video_in_csv.id
 
     def test_exception_deleting_unused_media(self, caplog):
         # Simulating a general exception when deleting unused media files

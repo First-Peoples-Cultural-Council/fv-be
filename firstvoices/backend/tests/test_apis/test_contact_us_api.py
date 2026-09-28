@@ -510,5 +510,7 @@ class TestContactUsEndpoint(
 
         self.client.force_authenticate(user=user_one)
 
+        endpoint = self.get_list_endpoint(site.slug)
+
         with pytest.raises(ImproperlyConfigured):
-            self.client.get(self.get_list_endpoint(site.slug))
+            self.client.get(endpoint)
