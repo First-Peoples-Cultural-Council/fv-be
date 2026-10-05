@@ -1,3 +1,5 @@
+import os
+import re
 import uuid
 
 from django.utils.text import get_valid_filename
@@ -25,6 +27,12 @@ from backend.resources.utils.import_export_widgets import (
 
 class BaseMediaResource(SiteContentResource):
     original_column_name = None
+
+    @staticmethod
+    def get_filename_pattern(valid_filename):
+        name, ext = os.path.splitext(valid_filename)
+        pattern = rf"(^|/){re.escape(name)}{re.escape(ext)}$"
+        return pattern
 
     def get_related_job_filter(self, row):
         if row.get("import_job"):
@@ -114,11 +122,12 @@ class AudioResource(BaseMediaResource):
             row["audio_title"] = row["audio_filename"]
 
         valid_filename = get_valid_filename(row["audio_filename"])
+        filename_pattern = self.get_filename_pattern(valid_filename)
 
         # Adding original
         related_job_filter = self.get_related_job_filter(row)
         associated_file = File.objects.filter(
-            content__contains=valid_filename, **related_job_filter
+            content__iregex=filename_pattern, **related_job_filter
         ).first()
         if associated_file:
             row["audio_original"] = str(associated_file.id)
@@ -164,11 +173,12 @@ class DocumentResource(BaseMediaResource):
             row["document_title"] = row["document_filename"]
 
         valid_filename = get_valid_filename(row["document_filename"])
+        filename_pattern = self.get_filename_pattern(valid_filename)
 
         # Adding original
         related_job_filter = self.get_related_job_filter(row)
         associated_file = File.objects.filter(
-            content__contains=valid_filename, **related_job_filter
+            content__iregex=filename_pattern, **related_job_filter
         ).first()
         if associated_file:
             row["document_original"] = str(associated_file.id)
@@ -212,11 +222,12 @@ class ImageResource(BaseMediaResource):
             row["img_title"] = row["img_filename"]
 
         valid_filename = get_valid_filename(row["img_filename"])
+        filename_pattern = self.get_filename_pattern(valid_filename)
 
         # Adding original
         related_job_filter = self.get_related_job_filter(row)
         associated_file = ImageFile.objects.filter(
-            content__contains=valid_filename, **related_job_filter
+            content__iregex=filename_pattern, **related_job_filter
         ).first()
         if associated_file:
             row["img_original"] = str(associated_file.id)
@@ -260,11 +271,12 @@ class VideoResource(BaseMediaResource):
             row["video_title"] = row["video_filename"]
 
         valid_filename = get_valid_filename(row["video_filename"])
+        filename_pattern = self.get_filename_pattern(valid_filename)
 
         # Adding original
         related_job_filter = self.get_related_job_filter(row)
         associated_file = VideoFile.objects.filter(
-            content__contains=valid_filename, **related_job_filter
+            content__iregex=filename_pattern, **related_job_filter
         ).first()
         if associated_file:
             row["video_original"] = str(associated_file.id)
