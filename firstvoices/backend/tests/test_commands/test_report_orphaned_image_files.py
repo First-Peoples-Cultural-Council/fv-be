@@ -139,10 +139,12 @@ class TestReportOrphanedImageFiles:
         call_command(COMMAND)
 
         assert (
-            f"{self.site.slug}: total=3 thumbs=3 sets=1 lone=0 photos=0" in caplog.text
+            f"{self.site.slug}: total=3 thumbs=3 complete=3 partial=0 alone=0 badsize=0 "
+            "photos=0" in caplog.text
         )
         assert (
-            f"{other_site.slug}: total=1 thumbs=0 sets=0 lone=0 photos=1" in caplog.text
+            f"{other_site.slug}: total=1 thumbs=0 complete=0 partial=0 alone=0 badsize=0 "
+            "photos=1" in caplog.text
         )
 
     def test_live_image_count_is_reported_per_site(self, caplog):

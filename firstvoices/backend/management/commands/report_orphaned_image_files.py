@@ -76,7 +76,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--sites",
-            dest="site_slug",
+            dest="site_slugs",
             help="Site slugs to limit the report to, separated by commas (optional).",
             default=None,
         )
@@ -239,10 +239,10 @@ class Command(BaseCommand):
             created = [row["created"] for row in site_rows]
             self.write(
                 f"   {slug}: total={len(site_rows)} thumbs={len(thumbnails)} "
-                f"complete={len(self.in_set_state(thumbnails, COMPLETE))}"
-                f"partial={len(self.in_set_state(thumbnails, PARTIAL))}"
-                f"alone={len(self.in_set_state(thumbnails, ALONE))}"
-                f"badsize={len(self.in_set_state(thumbnails, WRONG_SIZE))}"
+                f"complete={len(self.in_set_state(thumbnails, COMPLETE))} "
+                f"partial={len(self.in_set_state(thumbnails, PARTIAL))} "
+                f"alone={len(self.in_set_state(thumbnails, ALONE))} "
+                f"badsize={len(self.in_set_state(thumbnails, WRONG_SIZE))} "
                 f"photos={len(site_rows) - len(thumbnails)} "
                 f"live={live_images.get(slug, 0)} "
                 f"first={self.day(min(created))} last={self.day(max(created))}"
