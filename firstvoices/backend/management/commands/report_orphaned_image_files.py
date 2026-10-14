@@ -59,8 +59,8 @@ MEGABYTE = 1024 * 1024
 
 class Command(BaseCommand):
     help = (
-        "Reports Imagefile records that are not referenced by any Image or Video. Read-only."
-        "Splits them into thumbnails the app generated and photos someone uploaded, and says"
+        "Reports ImageFile records that are not referenced by any Image or Video. Read-only. "
+        "Splits them into thumbnails the app generated and photos someone uploaded, and says "
         "whether each thumbnail is part of a complete set."
     )
 
@@ -83,7 +83,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--output-dir",
             dest="output_dir",
-            help="Directory to write a CSV of the orhphaned records. The summary is logged either way.",
+            help="Directory to write a CSV of the orphaned records. The summary is logged either way.",
             default=None,
         )
 
@@ -108,48 +108,51 @@ class Command(BaseCommand):
             bool(largest_side) and largest_side <= max_size + THUMBNAIL_SIZE_TOLERANCE
         )
 
-    def get_rows(self, queryset):
-        # one pass over the orphans, grouped the same way delete_orphaned_thumbnail_files does it, so
-        # the two commands always report the same numbers. the thumbnail split and the set check both
-        # work off the file name, which the database cannot group on.
-        records = []
-        for instance in queryset.select_related("site").iterator(chunk_size=1000):
-            details = self.get_thumbnail_details(instance.content.name)
-            state = None
-            if details is None:
-                state = ""
-            elif not self.is_a_plausible_size(instance, details[1]):
-                state = WRONG_SIZE
-            records.append((instance, details, state))
+    def is_a_countable_thumbnail(self, instance, details):
+        return details is not None and self.is_a_plausible_size(instance, details[1])
 
-        # only sizes that could be a thumbnail count towards a complete set
+    def get_sizes_per_stem(self, records):
         sizes_per_stem = defaultdict(set)
-        for instance, details, state in records:
-            if state is None:
-                sizes_per_stem[(instance.site_id, details[2])].add(details[0])
+        for instance, details in records:
+            if self.is_a_countable_thumbnail(instance, details):
+                size_name, _, stem = details
+                sizes_per_stem[(instance.site_id, stem)].add(size_name)
+        return sizes_per_stem
 
-        rows = []
-        for instance, details, state in records:
-            if state is None:
-                found = len(sizes_per_stem[(instance.site_id, details[2])])
-                if found >= len(settings.IMAGE_SIZES):
-                    state = COMPLETE
-                else:
-                    state = PARTIAL if found > 1 else ALONE
-            rows.append(
-                {
-                    "model": ImageFile.__name__,
-                    "id": str(instance.id),
-                    "site": instance.site.slug,
-                    "created": instance.created,
-                    "size": instance.size or 0,
-                    "width": instance.width,
-                    "height": instance.height,
-                    "kind": UPLOADED if details is None else DERIVATIVE,
-                    "thumbnail_set": state,
-                }
-            )
-        return rows
+    def get_set_state(self, instance, details, sizes_per_stem):
+        if details is None:
+            return ""
+        if not self.is_a_plausible_size(instance, details[1]):
+            return WRONG_SIZE
+        found = len(sizes_per_stem[(instance.site_id, details[2])])
+        if found >= len(settings.IMAGE_SIZES):
+            return COMPLETE
+        return PARTIAL if found > 1 else ALONE
+
+    def get_row(self, instance, details, sizes_per_stem):
+        return {
+            "model": ImageFile.__name__,
+            "id": str(instance.id),
+            "site": instance.site.slug,
+            "created": instance.created,
+            "size": instance.size or 0,
+            "width": instance.width,
+            "height": instance.height,
+            "kind": UPLOADED if details is None else DERIVATIVE,
+            "thumbnail_set": self.get_set_state(instance, details, sizes_per_stem),
+        }
+
+    def get_rows(self, queryset):
+        # grouped in python, not sql: the set check works off the file name
+        records = [
+            (instance, self.get_thumbnail_details(instance.content.name))
+            for instance in queryset.select_related("site").iterator(chunk_size=1000)
+        ]
+        sizes_per_stem = self.get_sizes_per_stem(records)
+        return [
+            self.get_row(instance, details, sizes_per_stem)
+            for instance, details in records
+        ]
 
     # formatting helpers
 
