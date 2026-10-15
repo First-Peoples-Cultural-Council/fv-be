@@ -69,7 +69,8 @@ class Command(BaseCommand):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
-        self.change_log = []
+        self.change_log_file = None
+        self.change_log_writer = None
 
     def write(self, message):
         # the project's console log handler is set to WARNING, so logging alone would be silent
@@ -210,10 +211,16 @@ class Command(BaseCommand):
             f"Everything else is written to the change log and left in place."
         )
 
+    def record_change(self, instance, group, action):
+        self.change_log_writer.writerow(
+            self.get_change_log_row(instance, group, action)
+        )
+        self.change_log_file.flush()
+
     def record_kept_files(self, grouped):
         for group in KEPT_GROUPS:
             for instance in grouped[group]:
-                self.change_log.append(self.get_change_log_row(instance, group, KEPT))
+                self.record_change(instance, group, KEPT)
 
     # deleting
 
@@ -239,9 +246,7 @@ class Command(BaseCommand):
         # gone. one at a time menas a failed run can simply be re-run.
         if dry_run:
             for instance in thumbnails:
-                self.change_log.append(
-                    self.get_change_log_row(instance, APP_THUMBNAIL, WOULD_DELETE)
-                )
+                self.record_change(instance, APP_THUMBNAIL, WOULD_DELETE)
             return
 
         still_orphaned = self.get_still_orphaned_ids(thumbnails)
@@ -251,20 +256,23 @@ class Command(BaseCommand):
                     f"[{instance.id}] is no longer orphaned. Leaving it in place."
                 )
                 continue
-
-            self.change_log.append(
-                self.get_change_log_row(instance, APP_THUMBNAIL, DELETED)
-            )
+            # logged after the delete returns, so nothing is recorded as deleted unless it was
             instance.delete()
+            self.record_change(instance, APP_THUMBNAIL, DELETED)
 
-    def output_change_log(self, output_dir):
+    def write_change_log(self, output_dir, grouped, dry_run):
+        # the log is open for the whole run and written a row at a time, so a run that fails
+        # partway still leaves a record of everything it had already deleted
         log_filename = f"delete_orphaned_thumbnail_files_log_{timezone.now().strftime('%Y%m%d_%H%M')}.csv"
         log_file = os.path.join(output_dir, log_filename)
         with open(log_file, "w", newline="") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=CHANGE_LOG_FIELDNAMES)
-            writer.writeheader()
-            for change in self.change_log:
-                writer.writerow(change)
+            self.change_log_file = csvfile
+            self.change_log_writer = csv.DictWriter(
+                csvfile, fieldnames=CHANGE_LOG_FIELDNAMES
+            )
+            self.change_log_writer.writeheader()
+            self.record_kept_files(grouped)
+            self.delete_thumbnails(grouped[APP_THUMBNAIL], dry_run)
         self.write(f"Change log written to {log_file}.")
 
     def handle(self, *args, **options):
@@ -291,9 +299,6 @@ class Command(BaseCommand):
         )
 
         self.log_counts(grouped)
-        self.record_kept_files(grouped)
-        self.delete_thumbnails(grouped[APP_THUMBNAIL], dry_run)
-
-        if self.change_log:
-            self.output_change_log(output_dir)
+        if any(grouped.values()):
+            self.write_change_log(output_dir, grouped, dry_run)
         self.write("Finished deleting orphaned thumbnail files.")
