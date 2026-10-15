@@ -4,6 +4,7 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 
 from backend.models import Character, DictionaryEntry
+from backend.permissions.permission_classes import CanViewTeamContent
 from backend.serializers.health_metrics_serializers import SiteHealthMetricsSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import site_slug_parameter
@@ -23,6 +24,8 @@ from backend.views.base_views import SiteContentViewSetMixin
 )
 class HealthMetricsViewSet(SiteContentViewSetMixin, viewsets.ViewSet):
     """API endpoint that returns health metrics about the specified site."""
+
+    permission_classes = [CanViewTeamContent]
 
     def list(self, request, *args, **kwargs):
         site = self.get_validated_site()
