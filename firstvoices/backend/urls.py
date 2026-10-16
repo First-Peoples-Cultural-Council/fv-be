@@ -15,6 +15,7 @@ from backend.views.document_views import DocumentViewSet
 from backend.views.export_job_views import ExportJobViewSet
 from backend.views.gallery_views import GalleryViewSet
 from backend.views.games_views import WordsyViewSet
+from backend.views.health_metrics_views import HealthMetricsViewSet
 from backend.views.image_views import ImageViewSet
 from backend.views.immersion_label_views import ImmersionLabelViewSet
 from backend.views.import_job_media_views import ImportJobMediaViewSet
@@ -76,6 +77,9 @@ sites_router.register(
 sites_router.register(r"documents", DocumentViewSet, basename="document")
 sites_router.register(r"features", SiteFeatureViewSet, basename="sitefeature")
 sites_router.register(r"galleries", GalleryViewSet, basename="gallery")
+sites_router.register(
+    r"health-metrics", HealthMetricsViewSet, basename="health-metrics"
+)
 sites_router.register(
     r"ignored-characters", IgnoredCharactersViewSet, basename="ignoredcharacter"
 )
