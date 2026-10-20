@@ -87,9 +87,9 @@ class Command(BaseCommand):
             )
 
         # Instance deletion would also delete the old associated CSVs and uploaded files.
-        ImportJob.objects.filter(pk=job.id).delete()
+        ImportJob.objects.filter(id=job.id).delete()
         if job.validation_report_id:
-            ImportJobReport.objects.filter(pk=job.validation_report_id).delete()
+            ImportJobReport.objects.filter(id=job.validation_report_id).delete()
 
     def handle(self, *args, **options):
         dry_run = options["dry_run"]
