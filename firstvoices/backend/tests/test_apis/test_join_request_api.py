@@ -798,3 +798,52 @@ class TestJoinRequestEndpoints(
 
         assert response.status_code == 400
         assert JoinRequest.objects.count() == 0
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "status",
+        [
+            JoinRequestStatus.APPROVED,
+            JoinRequestStatus.PENDING,
+            JoinRequestStatus.IGNORED,
+            JoinRequestStatus.REJECTED,
+            JoinRequestStatus.CANCELLED,
+        ],
+    )
+    def test_list_my_requests_filter(self, status):
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        # Create join requests for the authenticated user and another user
+        join_request_user = factories.JoinRequestFactory.create(
+            site=site, user=user, status=status
+        )
+        join_request_other = factories.JoinRequestFactory.create(
+            site=site, status=JoinRequestStatus.PENDING
+        )
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + "?myRequests=true"
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert len(response_data["results"]) == 1
+        assert response_data["results"][0]["id"] == str(join_request_user.id)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + "?myRequests=false"
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+
+        results_ids = [result["id"] for result in response_data["results"]]
+        if status == JoinRequestStatus.PENDING:
+            assert str(join_request_user.id) in results_ids
+            assert str(join_request_other.id) in results_ids
+        else:
+            assert str(join_request_user.id) not in results_ids
+            assert str(join_request_other.id) in results_ids
