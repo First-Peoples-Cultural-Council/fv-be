@@ -6,6 +6,8 @@ from django.db import transaction
 from django.http import Http404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
     OpenApiResponse,
     extend_schema,
     extend_schema_view,
@@ -20,6 +22,7 @@ from rest_framework.viewsets import ModelViewSet
 from backend.models import Membership, Site
 from backend.models.constants import Role
 from backend.models.join_request import JoinRequest, JoinRequestStatus
+from backend.search.validators import get_valid_boolean
 from backend.serializers import fields
 from backend.serializers.join_request_serializers import JoinRequestDetailSerializer
 from backend.tasks.send_email_tasks import send_email_task
@@ -44,6 +47,20 @@ from backend.views.utils import (
             403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
+        parameters=[
+            OpenApiParameter(
+                name="myRequests",
+                description=_(
+                    "Filter to only show join requests made by the current user."
+                ),
+                required=False,
+                type=bool,
+                examples=[
+                    OpenApiExample("True", value=True),
+                    OpenApiExample("False", value=False),
+                ],
+            )
+        ],
     ),
     retrieve=extend_schema(
         description=_("Details about a specific join request."),
@@ -144,12 +161,26 @@ class JoinRequestViewSet(
         "reject": "change",
     }
 
-    def get_queryset(self):
+    def get_detail_queryset(self):
         site = self.get_validated_site()
-        return (
-            JoinRequest.objects.filter(site=site, status=JoinRequestStatus.PENDING)
-            .order_by("-created")
-            .select_related(*get_site_content_select_related_fields(), "user")
+        return JoinRequest.objects.filter(
+            site=site, status=JoinRequestStatus.PENDING
+        ).select_related(*get_site_content_select_related_fields(), "user")
+
+    def get_list_queryset(self):
+        site = self.get_validated_site()
+        queryset = JoinRequest.objects.filter(site=site)
+
+        my_requests = get_valid_boolean(
+            self.request.query_params.get("myRequests", False)
+        )
+        if my_requests:
+            queryset = queryset.filter(user=self.request.user)
+        else:
+            queryset = queryset.filter(status=JoinRequestStatus.PENDING)
+
+        return queryset.order_by("-created").select_related(
+            *get_site_content_select_related_fields(), "user"
         )
 
     def get_validated_site(self):
