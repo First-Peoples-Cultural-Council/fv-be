@@ -47,7 +47,6 @@ jsonschema==4.26.0
 kombu==5.5.4
 MarkupSafe==3.0.3
 mothertongues @ git+https://github.com/MotherTongues/mothertongues@0ea975a
-munkres==1.1.4
 nh3==0.3.7 # https://github.com/messense/nh3
 networkx==3.6.1
 numpy==1.26.4

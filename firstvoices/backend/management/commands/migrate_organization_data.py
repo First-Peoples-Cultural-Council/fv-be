@@ -33,6 +33,17 @@ class Command(BaseCommand):
             default=False,
         )
 
+    def convert_to_object_list(self, data_list):
+        """
+        Converts a list of strings to a list of dictionaries with the string as the value.
+        This is used to convert email addresses and URLs to the expected format for the Organization model.
+        """
+        return [
+            {f"item_{idx + 1}": value}
+            for idx, value in enumerate(data_list)
+            if value.strip()
+        ]
+
     @staticmethod
     def extract_data_from_widgets(contact_us_widgets):
         org_addresses = list(

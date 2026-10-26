@@ -1,4 +1,5 @@
 import json
+import uuid
 
 import pytest
 
@@ -8,6 +9,7 @@ from backend.tests import factories
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseUncontrolledSiteContentApiTest,
 )
+from backend.utils.uuid_utils import is_valid_uuid
 
 
 class TestOrganizationEndpoints(BaseUncontrolledSiteContentApiTest):
@@ -44,11 +46,21 @@ class TestOrganizationEndpoints(BaseUncontrolledSiteContentApiTest):
         return {
             "name": "Test Organization",
             "order": 1,
-            "emails": [{"primary": "test@fpcc.ca"}],
-            "phoneNumbers": [{"work": "1235551234"}],
+            "emails": [
+                {"id": str(uuid.uuid4()), "label": "primary", "value": "test@fpcc.ca"}
+            ],
+            "phoneNumbers": [
+                {"id": str(uuid.uuid4()), "label": "work", "value": "1235551234"}
+            ],
             "address": "123 Test St",
             "contactMessage": "Contact Message",
-            "urlList": [{"support": "https://www.firstvoices.com/support"}],
+            "urlList": [
+                {
+                    "id": str(uuid.uuid4()),
+                    "label": "support",
+                    "value": "https://www.firstvoices.com/support",
+                }
+            ],
         }
 
     def get_valid_patch_data(self, site=None):
@@ -96,20 +108,32 @@ class TestOrganizationEndpoints(BaseUncontrolledSiteContentApiTest):
     def assert_updated_instance(self, expected_data, actual_instance: Organization):
         assert actual_instance.name == expected_data["name"]
         assert actual_instance.order == expected_data["order"]
-        assert actual_instance.emails == expected_data["emails"]
-        assert actual_instance.phone_numbers == expected_data["phoneNumbers"]
+        for index, email in enumerate(expected_data["emails"]):
+            assert is_valid_uuid(email["id"])
+            assert email["label"] == expected_data["emails"][index]["label"]
+        for index, phone in enumerate(expected_data["phoneNumbers"]):
+            assert is_valid_uuid(phone["id"])
+            assert phone["label"] == expected_data["phoneNumbers"][index]["label"]
         assert actual_instance.address == expected_data["address"]
         assert actual_instance.contact_message == expected_data["contactMessage"]
-        assert actual_instance.url_list == expected_data["urlList"]
+        for index, url in enumerate(expected_data["urlList"]):
+            assert is_valid_uuid(url["id"])
+            assert url["label"] == expected_data["urlList"][index]["label"]
 
     def assert_update_response(self, expected_data, actual_response):
         assert actual_response["name"] == expected_data["name"]
         assert actual_response["order"] == expected_data["order"]
-        assert actual_response["emails"] == expected_data["emails"]
-        assert actual_response["phoneNumbers"] == expected_data["phoneNumbers"]
+        for index, email in enumerate(expected_data["emails"]):
+            assert is_valid_uuid(actual_response["emails"][index]["id"])
+            assert actual_response["emails"][index]["label"] == email["label"]
+        for index, phone in enumerate(expected_data["phoneNumbers"]):
+            assert is_valid_uuid(actual_response["phoneNumbers"][index]["id"])
+            assert actual_response["phoneNumbers"][index]["label"] == phone["label"]
         assert actual_response["address"] == expected_data["address"]
         assert actual_response["contactMessage"] == expected_data["contactMessage"]
-        assert actual_response["urlList"] == expected_data["urlList"]
+        for index, url in enumerate(expected_data["urlList"]):
+            assert is_valid_uuid(actual_response["urlList"][index]["id"])
+            assert actual_response["urlList"][index]["label"] == url["label"]
 
     def assert_created_instance(self, pk, data):
         instance = Organization.objects.get(pk=pk)
