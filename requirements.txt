@@ -59,7 +59,7 @@ pillow-heif==1.8.0
 pluggy==1.6.0
 prompt-toolkit==3.0.53
 psycopg2-binary==2.9.13
-pycparser==3.0
+pycparser==3.12
 PyJWT==2.14.0
 pyrsistent==0.20.0
 python-crontab==3.4.0
