@@ -14,9 +14,9 @@ class Organization(BaseSiteContentModel):
     name = models.CharField(max_length=DEFAULT_TITLE_LENGTH, null=False, blank=False)
     order = models.PositiveIntegerField(default=0, null=False, blank=False)
 
-    # JSON to store "label" : "email"
+    # JSON to store email objects {id: x, label: y, value: z}
     emails = models.JSONField(default=list, blank=True, null=False)
-    # JSON to store "label" : "number"
+    # JSON to store phone number objects {id: x, label: y, value: z}
     phone_numbers = models.JSONField(default=list, blank=True, null=False)
     address = models.TextField(default="", null=False, blank=True)
     contact_message = models.TextField(
@@ -24,7 +24,7 @@ class Organization(BaseSiteContentModel):
         null=False,
         blank=True,
     )
-    # JSON to store "label" : "url"
+    # JSON to store URL objects {id: x, label: y, value: z}
     url_list = models.JSONField(default=list, blank=True, null=False)
 
     class Meta:
