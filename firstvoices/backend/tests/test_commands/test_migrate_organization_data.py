@@ -85,9 +85,10 @@ class TestMigrateOrganizationData:
 
         assert organization.name == f"{site.title} Language Team"
         org_emails = self.strip_ids(organization.emails)
-        assert {"label": "Contact Email Old", "value": "test_old@fpcc.ca"} in org_emails
+
         assert {"label": "Contact Email 1", "value": "test@fpcc.ca"} in org_emails
         assert {"label": "Contact Email 2", "value": "test2@fpcc.ca"} in org_emails
+        assert {"label": "Contact Email 3", "value": "test_old@fpcc.ca"} in org_emails
 
         assert organization.address == f"Address 1 for site {site.slug}"
         assert organization.contact_message == f"Contact message 1 for site {site.slug}"
@@ -112,9 +113,9 @@ class TestMigrateOrganizationData:
         assert organization.name == f"{site.title} Language Team"
 
         org_emails = self.strip_ids(organization.emails)
-        assert {"label": "Contact Email Old", "value": "test_old@fpcc.ca"} in org_emails
         assert {"label": "Contact Email 1", "value": "test@fpcc.ca"} in org_emails
         assert {"label": "Contact Email 2", "value": "test2@fpcc.ca"} in org_emails
+        assert {"label": "Contact Email 3", "value": "test_old@fpcc.ca"} in org_emails
 
         assert organization.address == ""
         assert organization.contact_message == (
@@ -160,11 +161,9 @@ class TestMigrateOrganizationData:
             f"Dry run: Would migrate organization data for site '{site.slug}':"
             in caplog.text
         )
-        assert (
-            "'label': 'Contact Email Old', 'value': 'test_old@fpcc.ca'" in caplog.text
-        )
         assert "'label': 'Contact Email 1', 'value': 'test@fpcc.ca'" in caplog.text
         assert "'label': 'Contact Email 2', 'value': 'test2@fpcc.ca'" in caplog.text
+        assert "'label': 'Contact Email 3', 'value': 'test_old@fpcc.ca'" in caplog.text
         assert f"  Addresses: Address 1 for site {site.slug}" in caplog.text
         assert (
             f"  Contact Messages: Contact message 1 for site {site.slug}" in caplog.text
@@ -196,11 +195,14 @@ class TestMigrateOrganizationData:
             assert organization.name == f"{site.title} Language Team"
             org_emails = self.strip_ids(organization.emails)
             assert {
-                "label": "Contact Email Old",
+                "label": "Contact Email 1",
+                "value": "test@fpcc.ca",
+            } in org_emails
+            assert {"label": "Contact Email 2", "value": "test2@fpcc.ca"} in org_emails
+            assert {
+                "label": "Contact Email 3",
                 "value": "test_old@fpcc.ca",
             } in org_emails
-            assert {"label": "Contact Email 1", "value": "test@fpcc.ca"} in org_emails
-            assert {"label": "Contact Email 2", "value": "test2@fpcc.ca"} in org_emails
 
             assert organization.address == f"Address 1 for site {site.slug}"
             assert (

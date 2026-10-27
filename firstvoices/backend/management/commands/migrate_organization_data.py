@@ -90,24 +90,21 @@ class Command(BaseCommand):
 
     @staticmethod
     def extract_emails_from_site(site):
-        org_emails = []
+        site_emails = []
+        if site.contact_emails:
+            site_emails.extend(site.contact_emails)
         if site.contact_email_old:
+            site_emails.append(site.contact_email_old)
+
+        org_emails = []
+        for idx, contact_email in enumerate(site_emails):
             org_emails.append(
                 {
                     "id": str(uuid.uuid4()),
-                    "label": "Contact Email Old",
-                    "value": site.contact_email_old,
+                    "label": f"Contact Email {idx + 1}",
+                    "value": contact_email,
                 }
             )
-        if site.contact_emails:
-            for idx, contact_email in enumerate(site.contact_emails):
-                org_emails.append(
-                    {
-                        "id": str(uuid.uuid4()),
-                        "label": f"Contact Email {idx + 1}",
-                        "value": contact_email,
-                    }
-                )
         return org_emails
 
     def migrate_organization_data(self, site, dry_run=False):
