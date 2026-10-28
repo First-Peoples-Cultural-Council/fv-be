@@ -126,6 +126,30 @@ class TestJoinRequestEndpoints(
         # no related objects to delete
         pass
 
+    def assert_my_requests_non_admin(self, user, site):
+
+        join_request_user = factories.JoinRequestFactory.create(
+            site=site, user=user, status=JoinRequestStatus.PENDING
+        )
+        factories.JoinRequestFactory.create(site=site, status=JoinRequestStatus.PENDING)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + "?myRequests=true"
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert len(response_data["results"]) == 1
+        assert response_data["results"][0]["id"] == str(join_request_user.id)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + "?myRequests=false"
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert len(response_data["results"]) == 0
+
     @pytest.fixture(autouse=True)
     def configure_settings(self, settings):
         # Runs the email sending celery task synchronously during testing
@@ -860,28 +884,7 @@ class TestJoinRequestEndpoints(
         site, user = factories.get_site_with_member(Visibility.PUBLIC, role)
         self.client.force_authenticate(user=user)
 
-        # Create join requests for the authenticated user and another user
-        join_request_user = factories.JoinRequestFactory.create(
-            site=site, user=user, status=JoinRequestStatus.PENDING
-        )
-        factories.JoinRequestFactory.create(site=site, status=JoinRequestStatus.PENDING)
-
-        response = self.client.get(
-            self.get_list_endpoint(site.slug) + "?myRequests=true"
-        )
-        response_data = json.loads(response.content)
-
-        assert response.status_code == 200
-        assert len(response_data["results"]) == 1
-        assert response_data["results"][0]["id"] == str(join_request_user.id)
-
-        response = self.client.get(
-            self.get_list_endpoint(site.slug) + "?myRequests=false"
-        )
-        response_data = json.loads(response.content)
-
-        assert response.status_code == 200
-        assert len(response_data["results"]) == 0
+        self.assert_my_requests_non_admin(user, site)
 
     @pytest.mark.django_db
     def test_list_my_requests_filter_for_non_members(self):
@@ -889,25 +892,4 @@ class TestJoinRequestEndpoints(
         user = factories.UserFactory.create()
         self.client.force_authenticate(user=user)
 
-        # Create join requests for the authenticated user and another user
-        join_request_user = factories.JoinRequestFactory.create(
-            site=site, user=user, status=JoinRequestStatus.PENDING
-        )
-        factories.JoinRequestFactory.create(site=site, status=JoinRequestStatus.PENDING)
-
-        response = self.client.get(
-            self.get_list_endpoint(site.slug) + "?myRequests=true"
-        )
-        response_data = json.loads(response.content)
-
-        assert response.status_code == 200
-        assert len(response_data["results"]) == 1
-        assert response_data["results"][0]["id"] == str(join_request_user.id)
-
-        response = self.client.get(
-            self.get_list_endpoint(site.slug) + "?myRequests=false"
-        )
-        response_data = json.loads(response.content)
-
-        assert response.status_code == 200
-        assert len(response_data["results"]) == 0
+        self.assert_my_requests_non_admin(user, site)
