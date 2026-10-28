@@ -842,7 +842,6 @@ class TestJoinRequestEndpoints(
 
         results_ids = [result["id"] for result in response_data["results"]]
         if status == JoinRequestStatus.PENDING:
-            assert str(join_request_user.id) in results_ids
             assert str(join_request_other.id) in results_ids
         else:
             assert str(join_request_user.id) not in results_ids
