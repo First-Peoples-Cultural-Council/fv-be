@@ -126,8 +126,7 @@ class TestJoinRequestEndpoints(
         # no related objects to delete
         pass
 
-    def assert_my_requests_non_admin_public(self, user, site):
-
+    def assert_my_requests_non_admin(self, user, site):
         join_request_user = factories.JoinRequestFactory.create(
             site=site, user=user, status=JoinRequestStatus.PENDING
         )
@@ -141,6 +140,9 @@ class TestJoinRequestEndpoints(
         assert response.status_code == 200
         assert len(response_data["results"]) == 1
         assert response_data["results"][0]["id"] == str(join_request_user.id)
+
+    def assert_my_requests_non_admin_public(self, user, site):
+        self.assert_my_requests_non_admin(user, site)
 
         response = self.client.get(
             self.get_list_endpoint(site.slug) + "?myRequests=false"
@@ -151,20 +153,7 @@ class TestJoinRequestEndpoints(
         assert len(response_data["results"]) == 0
 
     def assert_my_requests_non_admin_private(self, user, site):
-
-        join_request_user = factories.JoinRequestFactory.create(
-            site=site, user=user, status=JoinRequestStatus.PENDING
-        )
-        factories.JoinRequestFactory.create(site=site, status=JoinRequestStatus.PENDING)
-
-        response = self.client.get(
-            self.get_list_endpoint(site.slug) + "?myRequests=true"
-        )
-        response_data = json.loads(response.content)
-
-        assert response.status_code == 200
-        assert len(response_data["results"]) == 1
-        assert response_data["results"][0]["id"] == str(join_request_user.id)
+        self.assert_my_requests_non_admin(user, site)
 
         response = self.client.get(
             self.get_list_endpoint(site.slug) + "?myRequests=false"
