@@ -19,6 +19,10 @@ class LabeledValueSerializer(serializers.Serializer):
 
     def to_internal_value(self, data):
         validated = super().to_internal_value(data)
+        if "value" not in validated:
+            raise serializers.ValidationError(
+                {"value": [self.fields["value"].error_messages["required"]]}
+            )
         validated["id"] = str(uuid.uuid4())
         return validated
 

@@ -4,7 +4,7 @@ import uuid
 import pytest
 
 from backend.models import Organization
-from backend.models.constants import Visibility
+from backend.models.constants import Role, Visibility
 from backend.tests import factories
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseUncontrolledSiteContentApiTest,
@@ -185,3 +185,44 @@ class TestOrganizationEndpoints(BaseUncontrolledSiteContentApiTest):
         assert response_data["contactMessage"] == expected_contact_message
         assert response_data["emails"] == ["ltp@fpcc.ca"]
         assert response_data["urlList"] == ["https://www.firstvoices.com/support"]
+
+    @pytest.mark.django_db
+    def test_malformed_list_fields_400_create(self):
+        site, user = factories.get_site_with_authenticated_member(
+            client=self.client, role=Role.LANGUAGE_ADMIN
+        )
+        data = {"name": "Test Organization", "order": 1, "emails": [{"label": "email"}]}
+        response = self.client.post(
+            self.get_list_endpoint(site_slug=site.slug),
+            data,
+            content_type="application/json",
+        )
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_malformed_list_fields_400_patch(self):
+        site, user = factories.get_site_with_authenticated_member(
+            client=self.client, role=Role.LANGUAGE_ADMIN
+        )
+        organization = factories.OrganizationFactory(site=site)
+        data = {"emails": [{"label": "email"}]}
+        response = self.client.patch(
+            self.get_detail_endpoint(site_slug=site.slug, key=organization.id),
+            data,
+            content_type="application/json",
+        )
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_malformed_list_fields_400_put(self):
+        site, user = factories.get_site_with_authenticated_member(
+            client=self.client, role=Role.LANGUAGE_ADMIN
+        )
+        organization = factories.OrganizationFactory(site=site)
+        data = {"name": "Test Organization", "order": 1, "emails": [{"label": "email"}]}
+        response = self.client.put(
+            self.get_detail_endpoint(site_slug=site.slug, key=organization.id),
+            data,
+            content_type="application/json",
+        )
+        assert response.status_code == 400
