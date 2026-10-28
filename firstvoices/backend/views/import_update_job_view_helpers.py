@@ -135,6 +135,8 @@ def notify_job_ready(
     if job_instance.validation_status != job_status_model.COMPLETE:
         raise ValidationError(requires_validation_message)
 
+    # TODO: Share notify eligibility checks for both job types, rejecting queued,
+    # running, and completed jobs; include the rolled-back update-job guard.
     url = request.build_absolute_uri(
         reverse(
             detail_view_name,
