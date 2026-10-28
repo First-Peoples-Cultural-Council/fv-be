@@ -126,6 +126,30 @@ class TestJoinRequestEndpoints(
         # no related objects to delete
         pass
 
+    def assert_my_requests_non_admin(self, user, site):
+
+        join_request_user = factories.JoinRequestFactory.create(
+            site=site, user=user, status=JoinRequestStatus.PENDING
+        )
+        factories.JoinRequestFactory.create(site=site, status=JoinRequestStatus.PENDING)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + "?myRequests=true"
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert len(response_data["results"]) == 1
+        assert response_data["results"][0]["id"] == str(join_request_user.id)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + "?myRequests=false"
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert len(response_data["results"]) == 0
+
     @pytest.fixture(autouse=True)
     def configure_settings(self, settings):
         # Runs the email sending celery task synchronously during testing
@@ -842,8 +866,30 @@ class TestJoinRequestEndpoints(
 
         results_ids = [result["id"] for result in response_data["results"]]
         if status == JoinRequestStatus.PENDING:
-            assert str(join_request_user.id) in results_ids
             assert str(join_request_other.id) in results_ids
         else:
             assert str(join_request_user.id) not in results_ids
             assert str(join_request_other.id) in results_ids
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "role",
+        [
+            Role.MEMBER,
+            Role.ASSISTANT,
+            Role.EDITOR,
+        ],
+    )
+    def test_list_my_requests_filter_for_non_admins(self, role):
+        site, user = factories.get_site_with_member(Visibility.PUBLIC, role)
+        self.client.force_authenticate(user=user)
+
+        self.assert_my_requests_non_admin(user, site)
+
+    @pytest.mark.django_db
+    def test_list_my_requests_filter_for_non_members(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        user = factories.UserFactory.create()
+        self.client.force_authenticate(user=user)
+
+        self.assert_my_requests_non_admin(user, site)

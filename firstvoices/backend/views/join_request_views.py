@@ -178,6 +178,8 @@ class JoinRequestViewSet(
             queryset = queryset.filter(user=self.request.user)
         else:
             queryset = queryset.filter(status=JoinRequestStatus.PENDING)
+            # Exclude the current user's join requests from the list if not filtering for "myRequests"
+            queryset = queryset.exclude(user=self.request.user)
 
         return queryset.order_by("-created").select_related(
             *get_site_content_select_related_fields(), "user"
