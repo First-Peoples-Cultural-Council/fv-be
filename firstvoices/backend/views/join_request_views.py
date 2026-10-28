@@ -171,9 +171,7 @@ class JoinRequestViewSet(
         site = self.get_validated_site()
         queryset = JoinRequest.objects.filter(site=site)
 
-        my_requests = get_valid_boolean(
-            self.request.query_params.get("myRequests", False)
-        )
+        my_requests = self.is_my_requests_query()
         if my_requests:
             queryset = queryset.filter(user=self.request.user)
         else:
@@ -185,11 +183,15 @@ class JoinRequestViewSet(
             *get_site_content_select_related_fields(), "user"
         )
 
+    def is_my_requests_query(self):
+        return get_valid_boolean(self.request.query_params.get("myRequests", False))
+
     def get_validated_site(self):
-        if self.action != "create":
+        if self.action != "create" and not self.is_my_requests_query():
             return super().get_validated_site()
 
         # Special case to allow creating a join request for any site that exists
+        # also allows non-admin users to view their own join requests for sites they don't have access to
         site_slug = self.get_site_slug()
         sites = Site.objects.filter(slug=site_slug)
 
@@ -197,6 +199,19 @@ class JoinRequestViewSet(
             raise Http404
 
         return sites.first()
+
+    def list(self, request, *args, **kwargs):
+        # If the "myRequests" query parameter is set, ignore the view permission filter
+        if not self.is_my_requests_query():
+            return super().list(request, *args, **kwargs)
+
+        page = self.paginate_queryset(self.get_queryset())
+        serializer = self.get_serializer(page, many=True)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+
+        return Response(serializer.data)
 
     @action(detail=True, methods=["post"])
     def ignore(self, request, site_slug=None, pk=None):
