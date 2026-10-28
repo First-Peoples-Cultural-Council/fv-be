@@ -126,7 +126,7 @@ class TestJoinRequestEndpoints(
         # no related objects to delete
         pass
 
-    def assert_my_requests_non_admin(self, user, site):
+    def assert_my_requests_non_admin_public(self, user, site):
 
         join_request_user = factories.JoinRequestFactory.create(
             site=site, user=user, status=JoinRequestStatus.PENDING
@@ -149,6 +149,27 @@ class TestJoinRequestEndpoints(
 
         assert response.status_code == 200
         assert len(response_data["results"]) == 0
+
+    def assert_my_requests_non_admin_private(self, user, site):
+
+        join_request_user = factories.JoinRequestFactory.create(
+            site=site, user=user, status=JoinRequestStatus.PENDING
+        )
+        factories.JoinRequestFactory.create(site=site, status=JoinRequestStatus.PENDING)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + "?myRequests=true"
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert len(response_data["results"]) == 1
+        assert response_data["results"][0]["id"] == str(join_request_user.id)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + "?myRequests=false"
+        )
+        assert response.status_code == 403
 
     @pytest.fixture(autouse=True)
     def configure_settings(self, settings):
@@ -872,24 +893,24 @@ class TestJoinRequestEndpoints(
             assert str(join_request_other.id) in results_ids
 
     @pytest.mark.django_db
-    @pytest.mark.parametrize(
-        "role",
-        [
-            Role.MEMBER,
-            Role.ASSISTANT,
-            Role.EDITOR,
-        ],
-    )
-    def test_list_my_requests_filter_for_non_admins(self, role):
-        site, user = factories.get_site_with_member(Visibility.PUBLIC, role)
-        self.client.force_authenticate(user=user)
-
-        self.assert_my_requests_non_admin(user, site)
-
-    @pytest.mark.django_db
-    def test_list_my_requests_filter_for_non_members(self):
+    def test_list_my_requests_filter_for_non_members_public(self):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
         user = factories.UserFactory.create()
         self.client.force_authenticate(user=user)
 
-        self.assert_my_requests_non_admin(user, site)
+        self.assert_my_requests_non_admin_public(user, site)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "visibility",
+        [
+            Visibility.MEMBERS,
+            Visibility.TEAM,
+        ],
+    )
+    def test_list_my_requests_filter_for_non_members_private(self, visibility):
+        site = factories.SiteFactory.create(visibility=visibility)
+        user = factories.UserFactory.create()
+        self.client.force_authenticate(user=user)
+
+        self.assert_my_requests_non_admin_private(user, site)
