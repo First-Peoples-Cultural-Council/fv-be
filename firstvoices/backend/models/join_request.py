@@ -45,7 +45,7 @@ class JoinRequest(BaseSiteContentModel):
             )
         ]
         rules_permissions = {
-            "view": predicates.is_at_least_language_admin,
+            "view": predicates.can_view_user_info,
             "add": rules.is_authenticated,
             "change": predicates.is_at_least_language_admin,
             "delete": predicates.is_at_least_language_admin,
