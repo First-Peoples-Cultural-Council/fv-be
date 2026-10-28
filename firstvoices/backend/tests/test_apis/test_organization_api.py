@@ -183,8 +183,14 @@ class TestOrganizationEndpoints(BaseUncontrolledSiteContentApiTest):
             f"this project, please contact ltp@fpcc.ca for more information."
         )
         assert response_data["contactMessage"] == expected_contact_message
-        assert response_data["emails"] == ["ltp@fpcc.ca"]
-        assert response_data["urlList"] == ["https://www.firstvoices.com/support"]
+        for email in response_data["emails"]:
+            assert is_valid_uuid(email["id"])
+            assert email["label"] == "FPCC Language Technology Program"
+            assert email["value"] == "ltp@fpcc.ca"
+        for url in response_data["urlList"]:
+            assert is_valid_uuid(url["id"])
+            assert url["label"] == "FirstVoices Support"
+            assert url["value"] == "https://www.firstvoices.com/support"
 
     @pytest.mark.django_db
     def test_malformed_list_fields_400_create(self):
