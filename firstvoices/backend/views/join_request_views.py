@@ -291,12 +291,28 @@ class JoinRequestViewSet(
             f"You are now approved on the {join_request.site.title} site with the role: {role.label}\n"
             ""
         )
+
         base_url = get_site_url_from_appjson(join_request.site)
         if base_url:
             message = (
                 message
                 + f"Visit the {join_request.site.title} site here: {base_url}\n\n"
             )
+
+            if role >= Role.ASSISTANT:
+                message = (
+                    message
+                    + f"You now have access to the FirstVoices dashboard for the {join_request.site.title} site."
+                    f"From the dashboard you can create and edit language content, generate reports and access"
+                    f"additional administrative features. You can access the dashboard here: {base_url}dashboard\n\n"
+                )
+            else:
+                # user is a member with no dashboard access
+                message = (
+                    message
+                    + f"You now have access to members-only words, phrases, songs and stories on the "
+                    f"{join_request.site.title} site.\n\n"
+                )
         else:
             message = message + "\n"
 
