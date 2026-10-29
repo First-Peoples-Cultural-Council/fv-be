@@ -943,3 +943,17 @@ class TestJoinRequestEndpoints(
         self.client.force_authenticate(user=user)
 
         self.assert_my_requests_non_admin_private(user, site)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("my_requests", [True, False])
+    def test_list_anonymous_user_empty(self, my_requests):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        factories.JoinRequestFactory.create(site=site)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug)
+            + f"?myRequests={str(my_requests).lower()}"
+        )
+
+        assert response.status_code == 200
+        assert json.loads(response.content)["results"] == []

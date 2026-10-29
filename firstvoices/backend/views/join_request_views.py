@@ -171,6 +171,9 @@ class JoinRequestViewSet(
         site = self.get_validated_site()
         queryset = JoinRequest.objects.filter(site=site)
 
+        if not self.request.user.is_authenticated:
+            return queryset.none()
+
         my_requests = self.is_my_requests_query()
         if my_requests:
             queryset = queryset.filter(user=self.request.user)
@@ -302,8 +305,8 @@ class JoinRequestViewSet(
             if role >= Role.ASSISTANT:
                 message = (
                     message
-                    + f"You now have access to the FirstVoices dashboard for the {join_request.site.title} site."
-                    f"From the dashboard you can create and edit language content, generate reports and access"
+                    + f"You now have access to the FirstVoices dashboard for the {join_request.site.title} site. "
+                    f"From the dashboard you can create and edit language content, generate reports and access "
                     f"additional administrative features. You can access the dashboard here: {base_url}dashboard\n\n"
                 )
             else:
