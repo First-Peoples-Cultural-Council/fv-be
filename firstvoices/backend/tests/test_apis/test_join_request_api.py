@@ -502,6 +502,46 @@ class TestJoinRequestEndpoints(
         self.assert_request_approved(join_request, site)
         assert len(mail.outbox) == 1
 
+    @pytest.mark.parametrize(
+        "role, has_dashboard_access",
+        [
+            (Role.MEMBER, False),
+            (Role.ASSISTANT, True),
+            (Role.EDITOR, True),
+            (Role.LANGUAGE_ADMIN, True),
+        ],
+    )
+    @pytest.mark.django_db
+    def test_approve_email_content_by_role(self, role, has_dashboard_access):
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+        factories.AppJsonFactory.create(
+            key="frontend_base_url", json=TEST_BASE_FRONTEND_URL
+        )
+        join_request = factories.JoinRequestFactory.create(site=site)
+        site_url = get_site_url_from_appjson(site)
+
+        response = self.client.post(
+            self.get_approve_endpoint(key=str(join_request.id), site_slug=site.slug),
+            data=self.format_upload_data({"role": role.name.lower()}),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+        assert len(mail.outbox) == 1
+
+        body = mail.outbox[0].body
+        assert f"with the role: {role.label}" in body
+        assert f"Visit the {site.title} site here: {site_url}" in body
+        if has_dashboard_access:
+            assert f"You can access the dashboard here: {site_url}dashboard" in body
+            assert "members-only" not in body
+        else:
+            assert "members-only words, phrases, songs and stories" in body
+            assert "dashboard" not in body
+
     def assert_request_approved(self, join_request, site):
         membership = Membership.objects.filter(
             site=site, user=join_request.user, role=Role.MEMBER
