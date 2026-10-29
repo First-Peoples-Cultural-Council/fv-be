@@ -1,8 +1,8 @@
 import uuid
 
+from django.core.paginator import Paginator
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models import Organization
@@ -113,30 +113,42 @@ class OrganizationViewSet(
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         if not queryset.exists():
-            site = self.get_validated_site()
-            return Response(
-                {
-                    "contact_message": f"The FirstVoices site for the {site.title} language is currently inactive. "
-                    f"If this is your language or community and you are interested in working on "
-                    f"this project, please contact ltp@fpcc.ca for more information.",
-                    "emails": [
-                        {
-                            "id": uuid.uuid4(),
-                            "label": "FPCC Language Technology Program",
-                            "value": "ltp@fpcc.ca",
-                        }
-                    ],
-                    "urlList": [
-                        {
-                            "id": uuid.uuid4(),
-                            "label": "FirstVoices Support",
-                            "value": "https://www.firstvoices.com/support",
-                        }
-                    ],
-                }
-            )
+            return self.get_default_organization_response()
         else:
             return super().list(request, *args, **kwargs)
+
+    def get_default_organization_response(self):
+        site = self.get_validated_site()
+        default_organization = Organization(
+            site=site,
+            name=f"FPCC Language Technology Program - {site.title}",
+            contact_message=f"The FirstVoices site for the {site.title} language is currently inactive. "
+            f"If this is your language or community and you are interested in working on "
+            f"this project, please contact ltp@fpcc.ca for more information.",
+            emails=[
+                {
+                    "id": uuid.uuid4(),
+                    "label": "FPCC Language Technology Program",
+                    "value": "ltp@fpcc.ca",
+                }
+            ],
+            url_list=[
+                {
+                    "id": uuid.uuid4(),
+                    "label": "FirstVoices Support",
+                    "value": "https://www.firstvoices.com/support",
+                }
+            ],
+        )
+
+        data = self.get_serializer(default_organization).data
+
+        paginator = self.paginator
+        paginator.request = self.request
+        paginator.page = Paginator([data], paginator.get_page_size(self.request)).page(
+            1
+        )
+        return paginator.get_paginated_response([data])
 
     def get_queryset(self):
         site = self.get_validated_site()
