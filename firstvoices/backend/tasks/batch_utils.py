@@ -19,6 +19,7 @@ from backend.models.files import File
 from backend.models.import_jobs import ImportJob, ImportJobReportRow, RowStatus
 from backend.models.media import ImageFile, VideoFile
 from backend.models.update_jobs import (
+    RollbackJob,
     UpdateJob,
     UpdateJobReport,
     UpdateJobReportRow,
@@ -39,19 +40,27 @@ def verify_no_other_jobs_running(current_job):
         Q(site=current_job.site),
         Q(status__in=started_states) | Q(validation_status__in=started_states),
     )
+    existing_incomplete_rollbacks = RollbackJob.objects.filter(
+        site=current_job.site, status__in=started_states
+    )
 
     if isinstance(current_job, ImportJob):
         existing_incomplete_import_jobs = existing_incomplete_import_jobs.exclude(
             id=current_job.id
         )
-    else:
+    elif isinstance(current_job, UpdateJob):
         existing_incomplete_update_jobs = existing_incomplete_update_jobs.exclude(
+            id=current_job.id
+        )
+    elif isinstance(current_job, RollbackJob):
+        existing_incomplete_rollbacks = existing_incomplete_rollbacks.exclude(
             id=current_job.id
         )
 
     if (
         existing_incomplete_import_jobs.exists()
         or existing_incomplete_update_jobs.exists()
+        or existing_incomplete_rollbacks.exists()
     ):
         current_job.status = "failed"
         current_job.save()

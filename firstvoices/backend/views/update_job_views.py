@@ -1,19 +1,27 @@
 from django.conf import settings
 from django.db import transaction
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.translation import gettext as _
-from drf_spectacular.utils import extend_schema_view
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import parsers, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from backend.models.update_jobs import UpdateJob, UpdateJobStatus
+from backend.models.jobs import JobStatus
+from backend.models.update_jobs import RollbackJob, UpdateJob, UpdateJobStatus
 from backend.serializers.update_job_serializers import (
+    RollbackJobSerializer,
     UpdateJobDetailSerializer,
     UpdateJobSerializer,
 )
-from backend.tasks.batch_utils import verify_no_other_update_jobs_running
+from backend.tasks.batch_utils import (
+    verify_no_other_jobs_running,
+    verify_no_other_update_jobs_running,
+)
+from backend.tasks.rollback_job_tasks import rollback_update_job
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tasks.utils.update_job_utils import verify_update_job_size_limit
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
@@ -62,7 +70,27 @@ SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
         notify_description=_(
             "Marks a validated batch edit job as ready for processing and notifies support."
         ),
-    )
+    ),
+    rollback=[
+        extend_schema(
+            parameters=[site_slug_parameter, id_parameter],
+            methods=["GET"],
+            responses={200: RollbackJobSerializer},
+            description=_(
+                "Staff only. Retrieve the rollback status, conflicts, and errors."
+            ),
+        ),
+        extend_schema(
+            parameters=[site_slug_parameter, id_parameter],
+            methods=["POST"],
+            description=_(
+                "Staff only. Queue rollback of a completed update job within seven days. "
+                "Conflicts are reported and overridden."
+            ),
+            request=None,
+            responses={202: RollbackJobSerializer},
+        ),
+    ],
 )
 class UpdateJobViewSet(
     AsyncJobDeleteMixin, SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet
@@ -80,12 +108,14 @@ class UpdateJobViewSet(
         "confirm": "change",
         "validate": "change",
         "notify": "change",
+        "rollback": "rollback",
     }
 
     started_statuses = [
         UpdateJobStatus.ACCEPTED,
         UpdateJobStatus.STARTED,
         UpdateJobStatus.COMPLETE,
+        UpdateJobStatus.ROLLED_BACK,
     ]
 
     validating_statuses = [
@@ -165,7 +195,10 @@ class UpdateJobViewSet(
                 "This job has already been confirmed and is currently being processed."
             )
 
-        if current_update_job.status == UpdateJobStatus.COMPLETE:
+        if current_update_job.status in [
+            UpdateJobStatus.COMPLETE,
+            UpdateJobStatus.ROLLED_BACK,
+        ]:
             raise ValidationError("This job has already finished processing.")
 
         verify_no_other_update_jobs_running(current_update_job)
@@ -199,6 +232,10 @@ class UpdateJobViewSet(
         """Mark a validated update job as ready for support processing."""
 
         update_job_id = self.kwargs["pk"]
+        if self.get_object().status == UpdateJobStatus.ROLLED_BACK:
+            raise ValidationError(
+                "A rolled-back job cannot be marked ready for processing."
+            )
         return notify_job_ready(
             request=request,
             site_slug=site_slug,
@@ -217,4 +254,62 @@ class UpdateJobViewSet(
             support_user_email=SUPPORT_USER_EMAIL,
             job_model=UpdateJob,
             job_status_model=UpdateJobStatus,
+        )
+
+    @action(detail=True, methods=["get", "post"])
+    def rollback(self, request, site_slug=None, pk=None):
+        # TODO: Add orphan-only media/file/S3 deletion and cleanup-only retries.
+        update_job = self.get_object()
+        if request.method == "GET":
+            rollback_job = get_object_or_404(RollbackJob, update_job=update_job)
+            return Response(RollbackJobSerializer(rollback_job).data)
+
+        # For POST requests, initiate the rollback process.
+        # Ensure that the update job is eligible for rollback and that no other conflicting jobs are running.
+        with transaction.atomic():
+            update_job = UpdateJob.objects.get(id=pk, site=update_job.site)
+            if (
+                update_job.status != UpdateJobStatus.COMPLETE
+                or update_job.change_snapshot is None
+            ):
+                raise ValidationError(
+                    "Only completed jobs with snapshots can be rolled back."
+                )
+            if (
+                update_job.rollback_expires_at is None
+                or timezone.now() >= update_job.rollback_expires_at
+            ):
+                raise ValidationError("The seven-day rollback window has expired.")
+
+            rollback_job, created = RollbackJob.objects.get_or_create(
+                update_job=update_job,
+                defaults={
+                    "site": update_job.site,
+                    "created_by": request.user,
+                    "last_modified_by": request.user,
+                },
+            )
+            if not created and rollback_job.status != JobStatus.FAILED:
+                raise ValidationError("This rollback has already been requested.")
+            verify_no_other_jobs_running(rollback_job)
+
+            # If the rollback job already exists, reset its status and related fields for a new attempt.
+            if not created:
+                rollback_job.status = JobStatus.ACCEPTED
+                rollback_job.message = None
+                rollback_job.task_id = None
+                rollback_job.conflicts = []
+                rollback_job.last_modified_by = request.user
+                rollback_job.save()
+            transaction.on_commit(
+                lambda: rollback_update_job.apply_async(
+                    (str(rollback_job.id),),
+                    link_error=link_error_handler.s(),
+                    ignore_result=True,
+                )
+            )
+
+        return Response(
+            RollbackJobSerializer(rollback_job).data,
+            status=status.HTTP_202_ACCEPTED,
         )

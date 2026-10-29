@@ -87,6 +87,8 @@ class TestMigrateImportUpdateJobs:
 
         expected_job = self.get_values(job)
         expected_job.pop("mode")
+        # Historical jobs have no rollback snapshot or rollback window.
+        expected_job.update(change_snapshot=None, rollback_expires_at=None)
         expected_report = self.get_values(report)
         expected_rows = [self.get_values(row) for row in rows]
 
@@ -188,6 +190,7 @@ class TestMigrateImportUpdateJobs:
         )
         expected = self.get_values(job)
         expected.pop("mode")
+        expected.update(change_snapshot=None, rollback_expires_at=None)
 
         call_command(self.COMMAND)
         migrated = UpdateJob.objects.values().get(id=job.id)

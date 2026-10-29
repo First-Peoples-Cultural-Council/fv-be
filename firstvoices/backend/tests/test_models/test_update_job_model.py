@@ -1,24 +1,13 @@
 import pytest
 
 from backend.models.files import File
-from backend.models.import_jobs import ImportJobStatus, RowStatus
 from backend.models.media import ImageFile, VideoFile
-from backend.models.update_jobs import (
-    UpdateJobReport,
-    UpdateJobRowStatus,
-    UpdateJobStatus,
-)
+from backend.models.update_jobs import UpdateJobReport, UpdateJobStatus
 from backend.tests import factories
 
 
 @pytest.mark.django_db
 class TestUpdateJobModel:
-    def test_status_values_match_import_job_statuses(self):
-        assert UpdateJobStatus.values == ImportJobStatus.values
-
-    def test_row_status_values_match_import_job_row_statuses(self):
-        assert UpdateJobRowStatus.values == RowStatus.values
-
     @pytest.mark.parametrize("add_report", [True, False])
     def test_report_is_deleted_if_exists_with_update_job_deletion(self, add_report):
         update_job = factories.UpdateJobFactory.create()
