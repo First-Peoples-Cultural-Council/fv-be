@@ -1,3 +1,5 @@
+import uuid
+
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework.response import Response
@@ -117,8 +119,20 @@ class OrganizationViewSet(
                     "contact_message": f"The FirstVoices site for the {site.title} language is currently inactive. "
                     f"If this is your language or community and you are interested in working on "
                     f"this project, please contact ltp@fpcc.ca for more information.",
-                    "emails": ["ltp@fpcc.ca"],
-                    "urlList": ["https://www.firstvoices.com/support"],
+                    "emails": [
+                        {
+                            "id": uuid.uuid4(),
+                            "label": "FPCC Language Technology Program",
+                            "value": "ltp@fpcc.ca",
+                        }
+                    ],
+                    "urlList": [
+                        {
+                            "id": uuid.uuid4(),
+                            "label": "FirstVoices Support",
+                            "value": "https://www.firstvoices.com/support",
+                        }
+                    ],
                 }
             )
         else:
