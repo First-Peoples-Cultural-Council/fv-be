@@ -182,12 +182,12 @@ class TestOrganizationEndpoints(BaseUncontrolledSiteContentApiTest):
             f"If this is your language or community and you are interested in working on "
             f"this project, please contact ltp@fpcc.ca for more information."
         )
-        assert response_data["contactMessage"] == expected_contact_message
-        for email in response_data["emails"]:
+        assert response_data["results"][0]["contactMessage"] == expected_contact_message
+        for email in response_data["results"][0]["emails"]:
             assert is_valid_uuid(email["id"])
             assert email["label"] == "FPCC Language Technology Program"
             assert email["value"] == "ltp@fpcc.ca"
-        for url in response_data["urlList"]:
+        for url in response_data["results"][0]["urlList"]:
             assert is_valid_uuid(url["id"])
             assert url["label"] == "FirstVoices Support"
             assert url["value"] == "https://www.firstvoices.com/support"
