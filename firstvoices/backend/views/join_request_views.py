@@ -163,9 +163,9 @@ class JoinRequestViewSet(
 
     def get_detail_queryset(self):
         site = self.get_validated_site()
-        return JoinRequest.objects.filter(
-            site=site, status=JoinRequestStatus.PENDING
-        ).select_related(*get_site_content_select_related_fields(), "user")
+        return JoinRequest.objects.filter(site=site).select_related(
+            *get_site_content_select_related_fields(), "user"
+        )
 
     def get_list_queryset(self):
         site = self.get_validated_site()
