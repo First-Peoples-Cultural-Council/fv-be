@@ -957,3 +957,24 @@ class TestJoinRequestEndpoints(
 
         assert response.status_code == 200
         assert json.loads(response.content)["results"] == []
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("request_status", JoinRequestStatus)
+    def test_join_requests_of_all_statuses_can_be_deleted_by_admin(
+        self, request_status
+    ):
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        join_request = factories.JoinRequestFactory.create(
+            site=site, status=request_status
+        )
+
+        response = self.client.delete(
+            self.get_detail_endpoint(key=str(join_request.id), site_slug=site.slug)
+        )
+
+        assert response.status_code == 204
+        assert not JoinRequest.objects.filter(id=join_request.id).exists()
