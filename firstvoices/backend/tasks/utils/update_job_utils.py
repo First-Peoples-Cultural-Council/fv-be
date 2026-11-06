@@ -75,6 +75,27 @@ def snapshot_update_entries(data, update_job):
     return snapshots
 
 
+def check_collection_targets_exist(entry_id, relations):
+    """Check that the saved collection relationship IDs still exist."""
+    for relation_name, related_ids in relations.items():
+        relation_field = DictionaryEntry._meta.get_field(relation_name)
+        related_model = relation_field.related_model
+        existing_ids = related_model.objects.filter(id__in=related_ids).values_list(
+            "id", flat=True
+        )
+        existing_ids = [str(related_id) for related_id in existing_ids]
+
+        missing_ids = []
+        for related_id in related_ids:
+            if related_id not in existing_ids:
+                missing_ids.append(related_id)
+
+        if missing_ids:
+            raise ValidationError(
+                f"Cannot restore entry {entry_id}: missing {relation_name} {sorted(missing_ids)}."
+            )
+
+
 def validate_snapshot_references(snapshot):
     """Check that all old references exist before restoring any entries."""
     for entry_id, change in snapshot.items():
@@ -96,23 +117,7 @@ def validate_snapshot_references(snapshot):
                 )
 
         # Check collection relationships without loading each related object separately.
-        for relation_name, related_ids in before_state["relations"].items():
-            relation_field = DictionaryEntry._meta.get_field(relation_name)
-            related_model = relation_field.related_model
-            existing_ids = related_model.objects.filter(id__in=related_ids).values_list(
-                "id", flat=True
-            )
-            existing_ids = [str(related_id) for related_id in existing_ids]
-
-            missing_ids = []
-            for related_id in related_ids:
-                if related_id not in existing_ids:
-                    missing_ids.append(related_id)
-
-            if missing_ids:
-                raise ValidationError(
-                    f"Cannot restore entry {entry_id}: missing {relation_name} {sorted(missing_ids)}."
-                )
+        check_collection_targets_exist(entry_id, before_state["relations"])
 
 
 def verify_update_job_size_limit(current_job):
