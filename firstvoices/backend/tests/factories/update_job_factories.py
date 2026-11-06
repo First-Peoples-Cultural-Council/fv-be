@@ -1,6 +1,11 @@
 import factory
 
-from backend.models.update_jobs import UpdateJob, UpdateJobReport, UpdateJobReportRow
+from backend.models.update_jobs import (
+    RollbackJob,
+    UpdateJob,
+    UpdateJobReport,
+    UpdateJobReportRow,
+)
 from backend.tests.factories.base_factories import BaseSiteContentFactory
 from backend.tests.factories.media_factories import FileFactory
 
@@ -26,3 +31,11 @@ class UpdateJobFactory(BaseSiteContentFactory):
 
     title = factory.Sequence(lambda n: "title %03d" % n)
     data = factory.SubFactory(FileFactory)
+
+
+class RollbackJobFactory(BaseSiteContentFactory):
+    class Meta:
+        model = RollbackJob
+
+    update_job = factory.SubFactory(UpdateJobFactory)
+    site = factory.SelfAttribute("update_job.site")

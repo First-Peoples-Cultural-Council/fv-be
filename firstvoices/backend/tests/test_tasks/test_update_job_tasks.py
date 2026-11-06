@@ -11,7 +11,9 @@ from backend.models.dictionary import (
     ExternalDictionaryEntrySystem,
     TypeOfDictionaryEntry,
 )
+from backend.models.files import File
 from backend.models.jobs import JobStatus
+from backend.models.media import ImageFile, VideoFile
 from backend.models.update_jobs import UpdateJob
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tests import factories
@@ -744,6 +746,105 @@ class TestBulkUpdate(BatchRelatedMediaMixin):
         assert entry2.title == "xyz"
         assert entry2.update_job_id == update_job.id
 
+    def test_unused_media_deleted(self):
+        self.create_dictionary_entries([TEST_ENTRY_IDS[0]])
+        csv_file = factories.FileFactory(
+            content=get_sample_file(
+                "update_job/test_unused_media_deleted.csv", self.MIMETYPE
+            )
+        )
+        update_job = factories.UpdateJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=csv_file,
+            validation_status=JobStatus.COMPLETE,
+            status=JobStatus.ACCEPTED,
+        )
+
+        # Upload media referenced in the CSV.
+        audio_in_csv = factories.FileFactory(
+            site=self.site,
+            update_job=update_job,
+            content=get_sample_file("sample-audio.mp3", "audio/mpeg"),
+        )
+        doc_in_csv = factories.FileFactory(
+            site=self.site,
+            update_job=update_job,
+            content=get_sample_file("sample-document.pdf", "application/pdf"),
+        )
+        image_in_csv = factories.ImageFileFactory(
+            site=self.site,
+            update_job=update_job,
+            content=get_sample_file("sample-image.jpg", "image/jpeg"),
+        )
+        video_in_csv = factories.VideoFileFactory(
+            site=self.site,
+            update_job=update_job,
+            content=get_sample_file("video_example_small.mp4", "video/mp4"),
+        )
+
+        # Upload extra media that the CSV does not use.
+        unused_audio = factories.FileFactory(site=self.site, update_job=update_job)
+        unused_doc = factories.FileFactory(site=self.site, update_job=update_job)
+        unused_image = factories.ImageFileFactory(site=self.site, update_job=update_job)
+        unused_video = factories.VideoFileFactory(site=self.site, update_job=update_job)
+
+        confirm_update_job(update_job.id)
+
+        update_job.refresh_from_db()
+        assert update_job.status == JobStatus.COMPLETE
+
+        # Only the uploads used by the update remain.
+        images = ImageFile.objects.filter(update_job=update_job)
+        files = File.objects.filter(update_job=update_job)
+        videos = VideoFile.objects.filter(update_job=update_job)
+        file_ids = list(files.values_list("id", flat=True))
+        assert images.count() == 1
+        assert images[0].id == image_in_csv.id
+        assert files.count() == 2
+        assert audio_in_csv.id in file_ids
+        assert doc_in_csv.id in file_ids
+        assert videos.count() == 1
+        assert videos[0].id == video_in_csv.id
+
+        entry = DictionaryEntry.objects.get(id=TEST_ENTRY_IDS[0])
+        assert entry.related_audio.get().original_id == audio_in_csv.id
+        assert entry.related_documents.get().original_id == doc_in_csv.id
+        assert entry.related_images.get().original_id == image_in_csv.id
+        assert entry.related_videos.get().original_id == video_in_csv.id
+
+        for file in [audio_in_csv, doc_in_csv, image_in_csv, video_in_csv]:
+            assert file.content.storage.exists(file.content.name)
+        for file in [unused_audio, unused_doc, unused_image, unused_video]:
+            assert not file.content.storage.exists(file.content.name)
+
+    def test_exception_deleting_unused_media(self, caplog):
+        self.create_dictionary_entries(TEST_ENTRY_IDS)
+        file_content = get_sample_file("update_job/minimal.csv", self.MIMETYPE)
+        file = factories.FileFactory(content=file_content)
+        update_job = factories.UpdateJobFactory(
+            site=self.site,
+            run_as_user=self.user,
+            data=file,
+            status=JobStatus.ACCEPTED,
+            validation_status=JobStatus.COMPLETE,
+        )
+        factories.FileFactory(site=self.site, update_job=update_job)
+
+        # Simulate a deletion failure for an unused upload.
+        with patch(
+            "backend.tasks.import_job_tasks.File.delete",
+            side_effect=Exception("General Exception"),
+        ):
+            confirm_update_job(update_job.id)
+
+        assert (
+            "An exception occurred while trying to delete unused media files."
+            in caplog.text
+        )
+        update_job.refresh_from_db()
+        assert update_job.status == JobStatus.COMPLETE
+
     def test_all_columns_update(self):
         self.create_dictionary_entries(TEST_ENTRY_IDS)
         file_content = get_sample_file(
@@ -863,6 +964,7 @@ class TestBulkUpdate(BatchRelatedMediaMixin):
             validation_status=JobStatus.COMPLETE,
             status=JobStatus.ACCEPTED,
         )
+        unused_file = factories.FileFactory(site=self.site, update_job=update_job)
 
         with patch(
             "backend.tasks.update_job_tasks.process_update_job_data",
@@ -873,6 +975,8 @@ class TestBulkUpdate(BatchRelatedMediaMixin):
             update_job = UpdateJob.objects.get(id=update_job.id)
             assert update_job.status == JobStatus.FAILED
             assert "Test exception" in caplog.text
+            assert File.objects.filter(id=unused_file.id).exists()
+            assert unused_file.content.storage.exists(unused_file.content.name)
 
     def test_update_valid_rows_only(self):
         self.create_dictionary_entries(TEST_ENTRY_IDS)

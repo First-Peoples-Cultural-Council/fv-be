@@ -21,6 +21,7 @@ class UpdateJobStatus(models.TextChoices):
     FAILED = "failed", "Failed"
     CANCELLED = "cancelled", "Cancelled"
     READY_FOR_IMPORT = "ready_for_import", "Ready for import"
+    ROLLED_BACK = "rolled_back", "Rolled back"
 
 
 class UpdateJobRowStatus(models.TextChoices):
@@ -93,6 +94,7 @@ class UpdateJob(BaseJob):
             "add": predicates.is_at_least_editor_or_super,
             "change": predicates.is_at_least_editor_or_super,
             "delete": predicates.is_at_least_editor_or_super,
+            "rollback": predicates.is_at_least_staff_admin,
         }
 
     title = models.CharField(blank=True, max_length=MAX_DESCRIPTION_LENGTH)
@@ -132,6 +134,9 @@ class UpdateJob(BaseJob):
         related_name="update_job_failed_rows_csv_set",
     )
 
+    change_snapshot = models.JSONField(null=True, blank=True)
+    rollback_expires_at = models.DateTimeField(null=True, blank=True)
+
     def _delete_report(self):
         update_job_report = self.validation_report
         if update_job_report:
@@ -169,3 +174,20 @@ class UpdateJob(BaseJob):
         self._delete_data_csv()
         self._delete_uploaded_media()
         return super().delete(using, keep_parents)
+
+
+class RollbackJob(BaseJob):
+    class Meta:
+        verbose_name = _("Rollback Job")
+        verbose_name_plural = _("Rollback Jobs")
+        rules_permissions = {
+            "view": predicates.is_at_least_staff_admin,
+            "add": predicates.is_at_least_staff_admin,
+            "change": predicates.is_at_least_staff_admin,
+            "delete": predicates.is_at_least_staff_admin,
+        }
+
+    update_job = models.OneToOneField(
+        UpdateJob, on_delete=models.CASCADE, related_name="rollback_job"
+    )
+    conflicts = models.JSONField(default=list, blank=True)
