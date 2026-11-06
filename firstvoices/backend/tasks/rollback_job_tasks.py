@@ -9,6 +9,7 @@ from backend.models.update_jobs import RollbackJob, UpdateJob, UpdateJobStatus
 from backend.search.indexing.dictionary_index import DictionaryEntryDocumentManager
 from backend.search.tasks.index_manager_tasks import request_sync_in_index
 from backend.tasks.batch_utils import verify_no_other_jobs_running
+from backend.tasks.utils.rollback_cleanup_utils import cleanup_rollback_media
 from backend.tasks.utils.update_job_utils import (
     SNAPSHOT_RELATIONS,
     snapshot_entry,
@@ -92,10 +93,12 @@ def rollback_update_job(rollback_job_id):
             rollback_job.message = None
             rollback_job.conflicts = conflicts
             rollback_job.save()
-            # TODO: Delete only orphaned job-created media/S3 files; support cleanup-only retries.
     except Exception as exc:
         logger.exception("Rollback job %s failed.", rollback_job_id)
         # Keep content changes atomic, but retain the failure report outside that transaction.
         RollbackJob.objects.filter(id=rollback_job_id).update(
             status=JobStatus.FAILED, message=str(exc), conflicts=conflicts
         )
+        return
+
+    cleanup_rollback_media(rollback_job_id)

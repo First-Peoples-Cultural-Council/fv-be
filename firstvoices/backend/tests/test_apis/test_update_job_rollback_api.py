@@ -285,3 +285,30 @@ class TestUpdateJobRollbackApi(TransactionOnCommitMixin):
         response = self.client.get(self.get_rollback_endpoint())
 
         assert response.status_code == 404
+
+    def test_completed_rollback_cannot_be_requested_again(self):
+        self.job.status = UpdateJobStatus.ROLLED_BACK
+        self.job.rollback_expires_at = timezone.now() - timedelta(days=2)
+        self.job.save()
+
+        rollback_job = factories.RollbackJobFactory(
+            update_job=self.job,
+            status=JobStatus.COMPLETE,
+            conflicts=[{"id": "entry", "fields": ["title"]}],
+        )
+
+        with patch(
+            "backend.views.update_job_views.rollback_update_job.apply_async"
+        ) as mock_rollback:
+            response = self.client.post(self.get_rollback_endpoint())
+
+        assert response.status_code == 400
+
+        rollback_job.refresh_from_db()
+        self.job.refresh_from_db()
+
+        assert self.job.status == UpdateJobStatus.ROLLED_BACK
+        assert rollback_job.status == JobStatus.COMPLETE
+        assert rollback_job.conflicts == [{"id": "entry", "fields": ["title"]}]
+
+        mock_rollback.assert_not_called()

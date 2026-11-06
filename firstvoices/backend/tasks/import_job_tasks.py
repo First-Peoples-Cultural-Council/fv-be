@@ -315,23 +315,27 @@ def dry_run_import_job(data, import_job):
         import_job.save()
 
 
-def delete_unused_media(import_job):
+def delete_unused_media(job):
     """
-    Checks for, and deletes, any media files that were uploaded for the import job but not associated with a media model
-    i.e. Not used in the import.
+    Delete files uploaded for an import or update job but not associated with a media model.
     """
     logger = get_task_logger(__name__)
+    related_job_filter = (
+        {"import_job": job} if isinstance(job, ImportJob) else {"update_job": job}
+    )
 
     try:
-        ImageFile.objects.filter(
-            import_job_id=import_job.id, image__isnull=True
-        ).delete()
-        VideoFile.objects.filter(
-            import_job_id=import_job.id, video__isnull=True
-        ).delete()
-        File.objects.filter(
-            import_job_id=import_job.id, audio__isnull=True, document__isnull=True
-        ).delete()
+        unused_files = (
+            ImageFile.objects.filter(**related_job_filter, image__isnull=True),
+            VideoFile.objects.filter(**related_job_filter, video__isnull=True),
+            File.objects.filter(
+                **related_job_filter, audio__isnull=True, document__isnull=True
+            ),
+        )
+        for files in unused_files:
+            for file in files:
+                # Instance deletion also removes the uploaded object from storage.
+                file.delete()
     except Exception as e:
         logger.warning(
             f"An exception occurred while trying to delete unused media files. Error: {e}"

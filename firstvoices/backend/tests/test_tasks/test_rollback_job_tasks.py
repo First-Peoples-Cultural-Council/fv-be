@@ -7,9 +7,11 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from backend.models import Audio
 from backend.models.files import File
 from backend.models.jobs import JobStatus
+from backend.models.media import Document, Image, ImageFile, Video, VideoFile
 from backend.models.update_jobs import RollbackJob, UpdateJobStatus
 from backend.tasks.rollback_job_tasks import rollback_update_job
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
+from backend.tasks.utils.rollback_cleanup_utils import cleanup_rollback_media
 from backend.tasks.utils.update_job_utils import snapshot_entry, snapshot_update_entries
 from backend.tests import factories
 
@@ -37,6 +39,15 @@ class TestRollbackJob:
     def create_rollback_job(self, update_job):
         return factories.RollbackJobFactory(
             update_job=update_job, created_by=self.user, last_modified_by=self.user
+        )
+
+    def create_cleanup_job(self):
+        update_job = factories.UpdateJobFactory(
+            site=self.site, status=UpdateJobStatus.ROLLED_BACK, change_snapshot={}
+        )
+        return factories.RollbackJobFactory(
+            update_job=update_job,
+            status=JobStatus.COMPLETE,
         )
 
     def test_snapshot_capture_ignores_invalid_ids_and_other_sites(self):
@@ -171,7 +182,6 @@ class TestRollbackJob:
         assert rollback_job.status == JobStatus.COMPLETE
         assert rollback_job.conflicts == []
 
-        # Media cleanup is deferred; rollback only restores the old relationships.
         assert Audio.objects.filter(id=new_audio.id).exists()
         assert File.objects.filter(id=new_audio.original_id).exists()
 
@@ -206,7 +216,7 @@ class TestRollbackJob:
         assert rollback_job.conflicts[0]["id"] == str(entry.id)
         assert "notes" in rollback_job.conflicts[0]["fields"]
 
-    def test_job_created_media_is_retained_after_rollback(self):
+    def test_job_created_media_is_deleted_after_rollback(self):
         entry = factories.DictionaryEntryFactory(site=self.site)
         original_state = snapshot_entry(entry)
 
@@ -233,9 +243,116 @@ class TestRollbackJob:
 
         entry.refresh_from_db()
         assert snapshot_entry(entry) == original_state
+
+        rollback_job.refresh_from_db()
+        assert rollback_job.status == JobStatus.COMPLETE
+
+        assert not Audio.objects.filter(id=audio.id).exists()
+        assert not File.objects.filter(id=uploaded_file.id).exists()
+        assert not uploaded_file.content.storage.exists(uploaded_file.content.name)
+
+    @pytest.mark.parametrize(
+        "media_factory, media_model, file_model",
+        [
+            (factories.AudioFactory, Audio, File),
+            (factories.DocumentFactory, Document, File),
+            (factories.ImageFactory, Image, ImageFile),
+            (factories.VideoFactory, Video, VideoFile),
+        ],
+    )
+    def test_cleanup_deletes_orphaned_media_and_original(
+        self, media_factory, media_model, file_model
+    ):
+        rollback_job = self.create_cleanup_job()
+        media = media_factory(
+            site=self.site, original__update_job=rollback_job.update_job
+        )
+        original = media.original
+
+        cleanup_rollback_media(rollback_job.id)
+
+        assert not media_model.objects.filter(id=media.id).exists()
+        assert not file_model.objects.filter(id=original.id).exists()
+        assert not original.content.storage.exists(original.content.name)
+        # Keep the CSV as job history, even when all job-created media is removed.
+        assert File.objects.filter(id=rollback_job.update_job.data_id).exists()
+
+    @pytest.mark.parametrize(
+        "media_factory", [factories.ImageFactory, factories.VideoFactory]
+    )
+    def test_cleanup_deletes_thumbnails(self, media_factory):
+        rollback_job = self.create_cleanup_job()
+        thumbnail = factories.ImageFileFactory(site=self.site)
+        small = factories.ImageFileFactory(site=self.site)
+        medium = factories.ImageFileFactory(site=self.site)
+        media_factory(
+            site=self.site,
+            original__update_job=rollback_job.update_job,
+            thumbnail=thumbnail,
+            small=small,
+            medium=medium,
+        )
+
+        cleanup_rollback_media(rollback_job.id)
+
+        for file in [thumbnail, small, medium]:
+            assert not ImageFile.objects.filter(id=file.id).exists()
+            assert not file.content.storage.exists(file.content.name)
+
+    @pytest.mark.parametrize(
+        "content_factory", [factories.DictionaryEntryFactory, factories.StoryFactory]
+    )
+    def test_cleanup_preserves_media_used_by_other_content(self, content_factory):
+        rollback_job = self.create_cleanup_job()
+        audio = factories.AudioFactory(
+            site=self.site, original__update_job=rollback_job.update_job
+        )
+
+        # Content outside the rolled-back entries still needs this audio.
+        content = content_factory(site=self.site)
+        content.related_audio.add(audio)
+
+        cleanup_rollback_media(rollback_job.id)
+
         assert Audio.objects.filter(id=audio.id).exists()
-        assert File.objects.filter(id=uploaded_file.id).exists()
-        assert uploaded_file.content.storage.exists(uploaded_file.content.name)
+        assert File.objects.filter(id=audio.original_id).exists()
+        assert audio.original.content.storage.exists(audio.original.content.name)
+
+    def test_cleanup_deletes_audio_with_speakers(self):
+        rollback_job = self.create_cleanup_job()
+        audio = factories.AudioFactory(
+            site=self.site, original__update_job=rollback_job.update_job
+        )
+
+        speaker = factories.PersonFactory(site=self.site)
+        factories.AudioSpeakerFactory(audio=audio, speaker=speaker)
+
+        cleanup_rollback_media(rollback_job.id)
+
+        assert not Audio.objects.filter(id=audio.id).exists()
+        assert not File.objects.filter(id=audio.original_id).exists()
+        assert speaker.audio_set.count() == 0
+
+    def test_failed_restoration_does_not_delete_uploads(self):
+        entry = factories.DictionaryEntryFactory(site=self.site)
+        update_job = self.create_update_job(
+            headers=["id", "title"], rows=[[str(entry.id), "Updated title"]]
+        )
+
+        audio = factories.AudioFactory(site=self.site, original__update_job=update_job)
+        file = audio.original
+
+        confirm_update_job(update_job.id)
+
+        entry.delete()
+        rollback_job = self.create_rollback_job(update_job)
+
+        rollback_update_job(rollback_job.id)
+
+        rollback_job.refresh_from_db()
+        assert rollback_job.status == JobStatus.FAILED
+        assert File.objects.filter(id=file.id).exists()
+        assert file.content.storage.exists(file.content.name)
 
     def test_only_successful_rows_have_snapshots(self):
         valid_entry = factories.DictionaryEntryFactory(site=self.site)

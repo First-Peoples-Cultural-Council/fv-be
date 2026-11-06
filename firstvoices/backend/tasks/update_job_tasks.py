@@ -27,6 +27,7 @@ from backend.tasks.batch_utils import (
     verify_no_other_update_jobs_running,
 )
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
+from backend.tasks.import_job_tasks import delete_unused_media
 from backend.tasks.utils.reporting_utils import (
     attach_csv_to_update_job_report,
     generate_update_job_report,
@@ -323,6 +324,7 @@ def run_update_job(data, update_job):
         # Start the rollback window after successful execution, not when the job was queued.
         update_job.rollback_expires_at = timezone.now() + timedelta(days=7)
         update_job.status = UpdateJobStatus.COMPLETE
+        delete_unused_media(update_job)
     except Exception as e:
         logger.error(e)
         update_job.status = UpdateJobStatus.FAILED

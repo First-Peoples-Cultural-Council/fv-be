@@ -86,7 +86,8 @@ SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
             methods=["POST"],
             description=_(
                 "Staff only. Queue rollback of a completed update job within seven days. "
-                "Conflicts are reported and overridden."
+                "Conflicts are reported and overridden. Orphaned job-uploaded media "
+                "are cleaned up after restoration; cleanup failures are logged."
             ),
             request=None,
             responses={202: RollbackJobSerializer},
@@ -255,7 +256,6 @@ class UpdateJobViewSet(
 
     @action(detail=True, methods=["get", "post"])
     def rollback(self, request, site_slug=None, pk=None):
-        # TODO: Add orphan-only media/file/S3 deletion and cleanup-only retries.
         update_job = self.get_object()
         if request.method == "GET":
             rollback_job = get_object_or_404(RollbackJob, update_job=update_job)

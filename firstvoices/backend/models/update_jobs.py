@@ -134,6 +134,8 @@ class UpdateJob(BaseJob):
         related_name="update_job_failed_rows_csv_set",
     )
 
+    # TODO: Add a ticket for scheduled snapshot deletion after an agreed 7-14 day
+    # retention period, preserving snapshots needed by queued or running rollbacks.
     change_snapshot = models.JSONField(null=True, blank=True)
     rollback_expires_at = models.DateTimeField(null=True, blank=True)
 
