@@ -58,7 +58,8 @@ SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
             "When finished, the validationStatus and validationReport will be updated."
         ),
         notify_description=_(
-            "Marks a validated batch import job as ready for import and notifies support."
+            "Marks a validated batch import job as ready for import and notifies support. "
+            "Queued, running, or completed import jobs cannot be marked ready."
         ),
     )
 )

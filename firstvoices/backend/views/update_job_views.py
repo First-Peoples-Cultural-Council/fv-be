@@ -68,7 +68,8 @@ SUPPORT_USER_EMAIL = settings.SUPPORT_USER_EMAIL
             "No changes are made to the dictionary during validation, and the job must be confirmed separately."
         ),
         notify_description=_(
-            "Marks a validated batch edit job as ready for processing and notifies support."
+            "Marks a validated batch edit job as ready for processing and notifies support. "
+            "Queued, running, completed, or rolled-back update jobs cannot be marked ready."
         ),
     ),
     rollback=[
@@ -232,10 +233,6 @@ class UpdateJobViewSet(
         """Mark a validated update job as ready for support processing."""
 
         update_job_id = self.kwargs["pk"]
-        if self.get_object().status == UpdateJobStatus.ROLLED_BACK:
-            raise ValidationError(
-                "A rolled-back job cannot be marked ready for processing."
-            )
         return notify_job_ready(
             request=request,
             site_slug=site_slug,

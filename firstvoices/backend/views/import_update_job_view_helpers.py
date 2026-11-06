@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from backend.models.import_jobs import ImportJob, ImportJobStatus
+from backend.models.update_jobs import UpdateJob, UpdateJobStatus
 from backend.tasks.send_email_tasks import send_email_task
 from backend.views import doc_strings
 
@@ -127,16 +128,28 @@ def notify_job_ready(
     job_model=ImportJob,
     job_status_model=ImportJobStatus,
 ):
-    """Mark a validated import/update job as ready and notify support."""
+    """Notify support after validation, but before import/update execution."""
     job_instance = job_model.objects.get(id=job_id)
+    if job_model is UpdateJob and job_instance.status == UpdateJobStatus.ROLLED_BACK:
+        raise ValidationError(
+            "A rolled-back job cannot be marked ready for processing."
+        )
+
     if job_instance.status == job_status_model.READY_FOR_IMPORT:
         raise ValidationError(already_ready_message)
+
+    if job_instance.status in [
+        job_status_model.ACCEPTED,
+        job_status_model.STARTED,
+        job_status_model.COMPLETE,
+    ]:
+        raise ValidationError(
+            "A queued, running, or completed job cannot be marked ready for processing."
+        )
 
     if job_instance.validation_status != job_status_model.COMPLETE:
         raise ValidationError(requires_validation_message)
 
-    # TODO: Share notify eligibility checks for both job types, rejecting queued,
-    # running, and completed jobs; include the rolled-back update-job guard.
     url = request.build_absolute_uri(
         reverse(
             detail_view_name,
