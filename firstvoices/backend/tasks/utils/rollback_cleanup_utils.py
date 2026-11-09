@@ -27,6 +27,19 @@ def has_content_references(instance):
     return False
 
 
+def get_media_files(media):
+    """Collect the original and any image or video files."""
+    files = [media.original]
+
+    if isinstance(media, (Image, Video)):
+        for size_name in ("thumbnail", "small", "medium"):
+            thumbnail_file = getattr(media, size_name)
+            if thumbnail_file is not None:
+                files.append(thumbnail_file)
+
+    return files
+
+
 def delete_orphaned_media_records(update_job):
     """
     Delete unused media and file database records, then return their file objects.
@@ -47,14 +60,7 @@ def delete_orphaned_media_records(update_job):
                 if has_content_references(media):
                     continue
 
-                files_to_check.append(media.original)
-
-                # Image and video previews have their own file records.
-                if isinstance(media, (Image, Video)):
-                    for size_name in ("thumbnail", "small", "medium"):
-                        thumbnail_file = getattr(media, size_name)
-                        if thumbnail_file is not None:
-                            files_to_check.append(thumbnail_file)
+                files_to_check.extend(get_media_files(media))
 
                 # Instance deletion also deletes originals and thumbnails. Check
                 # those separately below so a shared file is not deleted.
