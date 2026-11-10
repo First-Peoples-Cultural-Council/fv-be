@@ -7,6 +7,7 @@ from drf_spectacular.utils import (
     inline_serializer,
 )
 from rest_framework import mixins, serializers, viewsets
+from rest_framework.exceptions import ValidationError
 
 from backend.models import Audio, Document, Image, Song, Story, Video
 from backend.models.dictionary import DictionaryEntry
@@ -108,3 +109,10 @@ class LookupViewSet(
 
     def get_serializer_class(self):
         return self.serializers[self.get_model()]
+
+    @extend_schema(exclude=True)
+    def list(self, request, *args, **kwargs):
+        """
+        Return a 400 error if no ID is provided, since this endpoint does not support listing objects.
+        """
+        raise ValidationError(_("An ID must be provided to look up an object."))
