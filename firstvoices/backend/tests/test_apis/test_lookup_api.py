@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from django.urls import reverse
 
 from backend.models.constants import Visibility
 from backend.search.constants import (
@@ -233,3 +234,14 @@ class TestLookupApi(NonSiteDetailEndpointTestMixin, BaseNonSiteApiTest):
         response = self.client.get(self.get_detail_endpoint(key=song.id))
 
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_400_no_id_provided(self):
+        response = self.client.get(
+            reverse("api:lookup-list", current_app=self.APP_NAME)
+        )
+
+        assert response.status_code == 400
+        assert "An ID must be provided to look up an object." in str(
+            json.loads(response.content)
+        )
