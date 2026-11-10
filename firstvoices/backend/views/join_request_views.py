@@ -6,6 +6,8 @@ from django.db import transaction
 from django.http import Http404
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiParameter,
     OpenApiResponse,
     extend_schema,
     extend_schema_view,
@@ -20,6 +22,7 @@ from rest_framework.viewsets import ModelViewSet
 from backend.models import Membership, Site
 from backend.models.constants import Role
 from backend.models.join_request import JoinRequest, JoinRequestStatus
+from backend.search.validators import get_valid_boolean
 from backend.serializers import fields
 from backend.serializers.join_request_serializers import JoinRequestDetailSerializer
 from backend.tasks.send_email_tasks import send_email_task
@@ -44,6 +47,20 @@ from backend.views.utils import (
             403: OpenApiResponse(description=doc_strings.error_403_site_access_denied),
             404: OpenApiResponse(description=doc_strings.error_404_missing_site),
         },
+        parameters=[
+            OpenApiParameter(
+                name="myRequests",
+                description=_(
+                    "Filter to only show join requests made by the current user."
+                ),
+                required=False,
+                type=bool,
+                examples=[
+                    OpenApiExample("True", value=True),
+                    OpenApiExample("False", value=False),
+                ],
+            )
+        ],
     ),
     retrieve=extend_schema(
         description=_("Details about a specific join request."),
@@ -144,19 +161,40 @@ class JoinRequestViewSet(
         "reject": "change",
     }
 
-    def get_queryset(self):
+    def get_detail_queryset(self):
         site = self.get_validated_site()
-        return (
-            JoinRequest.objects.filter(site=site, status=JoinRequestStatus.PENDING)
-            .order_by("-created")
-            .select_related(*get_site_content_select_related_fields(), "user")
+        return JoinRequest.objects.filter(site=site).select_related(
+            *get_site_content_select_related_fields(), "user"
         )
 
+    def get_list_queryset(self):
+        site = self.get_validated_site()
+        queryset = JoinRequest.objects.filter(site=site)
+
+        if not self.request.user.is_authenticated:
+            return queryset.none()
+
+        my_requests = self.is_my_requests_query()
+        if my_requests:
+            queryset = queryset.filter(user=self.request.user)
+        else:
+            queryset = queryset.filter(status=JoinRequestStatus.PENDING)
+            # Exclude the current user's join requests from the list if not filtering for "myRequests"
+            queryset = queryset.exclude(user=self.request.user)
+
+        return queryset.order_by("-created").select_related(
+            *get_site_content_select_related_fields(), "user"
+        )
+
+    def is_my_requests_query(self):
+        return get_valid_boolean(self.request.query_params.get("myRequests", False))
+
     def get_validated_site(self):
-        if self.action != "create":
+        if self.action != "create" and not self.is_my_requests_query():
             return super().get_validated_site()
 
         # Special case to allow creating a join request for any site that exists
+        # also allows non-admin users to view their own join requests for sites they don't have access to
         site_slug = self.get_site_slug()
         sites = Site.objects.filter(slug=site_slug)
 
@@ -164,6 +202,19 @@ class JoinRequestViewSet(
             raise Http404
 
         return sites.first()
+
+    def list(self, request, *args, **kwargs):
+        # If the "myRequests" query parameter is set, ignore the view permission filter
+        if not self.is_my_requests_query():
+            return super().list(request, *args, **kwargs)
+
+        page = self.paginate_queryset(self.get_queryset())
+        serializer = self.get_serializer(page, many=True)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+
+        return Response(serializer.data)
 
     @action(detail=True, methods=["post"])
     def ignore(self, request, site_slug=None, pk=None):
@@ -243,12 +294,28 @@ class JoinRequestViewSet(
             f"You are now approved on the {join_request.site.title} site with the role: {role.label}\n"
             ""
         )
+
         base_url = get_site_url_from_appjson(join_request.site)
         if base_url:
             message = (
                 message
                 + f"Visit the {join_request.site.title} site here: {base_url}\n\n"
             )
+
+            if role >= Role.ASSISTANT:
+                message = (
+                    message
+                    + f"You now have access to the FirstVoices dashboard for the {join_request.site.title} site. "
+                    f"From the dashboard you can create and edit language content, generate reports and access "
+                    f"additional administrative features. You can access the dashboard here: {base_url}dashboard\n\n"
+                )
+            else:
+                # user is a member with no dashboard access
+                message = (
+                    message
+                    + f"You now have access to members-only words, phrases, songs and stories on the "
+                    f"{join_request.site.title} site.\n\n"
+                )
         else:
             message = message + "\n"
 

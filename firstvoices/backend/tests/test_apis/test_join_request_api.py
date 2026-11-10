@@ -126,6 +126,40 @@ class TestJoinRequestEndpoints(
         # no related objects to delete
         pass
 
+    def assert_my_requests_non_admin(self, user, site):
+        join_request_user = factories.JoinRequestFactory.create(
+            site=site, user=user, status=JoinRequestStatus.PENDING
+        )
+        factories.JoinRequestFactory.create(site=site, status=JoinRequestStatus.PENDING)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + "?myRequests=true"
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert len(response_data["results"]) == 1
+        assert response_data["results"][0]["id"] == str(join_request_user.id)
+
+    def assert_my_requests_non_admin_public(self, user, site):
+        self.assert_my_requests_non_admin(user, site)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + "?myRequests=false"
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert len(response_data["results"]) == 0
+
+    def assert_my_requests_non_admin_private(self, user, site):
+        self.assert_my_requests_non_admin(user, site)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + "?myRequests=false"
+        )
+        assert response.status_code == 403
+
     @pytest.fixture(autouse=True)
     def configure_settings(self, settings):
         # Runs the email sending celery task synchronously during testing
@@ -468,6 +502,46 @@ class TestJoinRequestEndpoints(
         self.assert_request_approved(join_request, site)
         assert len(mail.outbox) == 1
 
+    @pytest.mark.parametrize(
+        "role, has_dashboard_access",
+        [
+            (Role.MEMBER, False),
+            (Role.ASSISTANT, True),
+            (Role.EDITOR, True),
+            (Role.LANGUAGE_ADMIN, True),
+        ],
+    )
+    @pytest.mark.django_db
+    def test_approve_email_content_by_role(self, role, has_dashboard_access):
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+        factories.AppJsonFactory.create(
+            key="frontend_base_url", json=TEST_BASE_FRONTEND_URL
+        )
+        join_request = factories.JoinRequestFactory.create(site=site)
+        site_url = get_site_url_from_appjson(site)
+
+        response = self.client.post(
+            self.get_approve_endpoint(key=str(join_request.id), site_slug=site.slug),
+            data=self.format_upload_data({"role": role.name.lower()}),
+            content_type=self.content_type,
+        )
+
+        assert response.status_code == 200
+        assert len(mail.outbox) == 1
+
+        body = mail.outbox[0].body
+        assert f"with the role: {role.label}" in body
+        assert f"Visit the {site.title} site here: {site_url}" in body
+        if has_dashboard_access:
+            assert f"You can access the dashboard here: {site_url}dashboard" in body
+            assert "members-only" not in body
+        else:
+            assert "members-only words, phrases, songs and stories" in body
+            assert "dashboard" not in body
+
     def assert_request_approved(self, join_request, site):
         membership = Membership.objects.filter(
             site=site, user=join_request.user, role=Role.MEMBER
@@ -798,3 +872,109 @@ class TestJoinRequestEndpoints(
 
         assert response.status_code == 400
         assert JoinRequest.objects.count() == 0
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "status",
+        [
+            JoinRequestStatus.APPROVED,
+            JoinRequestStatus.PENDING,
+            JoinRequestStatus.IGNORED,
+            JoinRequestStatus.REJECTED,
+            JoinRequestStatus.CANCELLED,
+        ],
+    )
+    def test_list_my_requests_filter(self, status):
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        # Create join requests for the authenticated user and another user
+        join_request_user = factories.JoinRequestFactory.create(
+            site=site, user=user, status=status
+        )
+        join_request_other = factories.JoinRequestFactory.create(
+            site=site, status=JoinRequestStatus.PENDING
+        )
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + "?myRequests=true"
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+        assert len(response_data["results"]) == 1
+        assert response_data["results"][0]["id"] == str(join_request_user.id)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + "?myRequests=false"
+        )
+        response_data = json.loads(response.content)
+
+        assert response.status_code == 200
+
+        results_ids = [result["id"] for result in response_data["results"]]
+        if status == JoinRequestStatus.PENDING:
+            assert str(join_request_other.id) in results_ids
+        else:
+            assert str(join_request_user.id) not in results_ids
+            assert str(join_request_other.id) in results_ids
+
+    @pytest.mark.django_db
+    def test_list_my_requests_filter_for_non_members_public(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        user = factories.UserFactory.create()
+        self.client.force_authenticate(user=user)
+
+        self.assert_my_requests_non_admin_public(user, site)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        "visibility",
+        [
+            Visibility.MEMBERS,
+            Visibility.TEAM,
+        ],
+    )
+    def test_list_my_requests_filter_for_non_members_private(self, visibility):
+        site = factories.SiteFactory.create(visibility=visibility)
+        user = factories.UserFactory.create()
+        self.client.force_authenticate(user=user)
+
+        self.assert_my_requests_non_admin_private(user, site)
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("my_requests", [True, False])
+    def test_list_anonymous_user_empty(self, my_requests):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+        factories.JoinRequestFactory.create(site=site)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug)
+            + f"?myRequests={str(my_requests).lower()}"
+        )
+
+        assert response.status_code == 200
+        assert json.loads(response.content)["results"] == []
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("request_status", JoinRequestStatus)
+    def test_join_requests_of_all_statuses_can_be_deleted_by_admin(
+        self, request_status
+    ):
+        site, user = factories.get_site_with_member(
+            Visibility.PUBLIC, Role.LANGUAGE_ADMIN
+        )
+        self.client.force_authenticate(user=user)
+
+        join_request = factories.JoinRequestFactory.create(
+            site=site, status=request_status
+        )
+
+        response = self.client.delete(
+            self.get_detail_endpoint(key=str(join_request.id), site_slug=site.slug)
+        )
+
+        assert response.status_code == 204
+        assert not JoinRequest.objects.filter(id=join_request.id).exists()

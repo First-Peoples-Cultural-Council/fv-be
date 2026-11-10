@@ -31,6 +31,12 @@ can_view_self = Predicate(
     name="can_view_self",
 )
 
+# Predicate for users who can view team content, assistants and higher plus staff
+can_view_team_content = Predicate(
+    (base.has_at_least_assistant_membership | base.is_at_least_staff_admin),
+    name="can_view_team_content",
+)
+
 
 # user can view an immersion label, if the user can view the related dictionary entry
 @predicate

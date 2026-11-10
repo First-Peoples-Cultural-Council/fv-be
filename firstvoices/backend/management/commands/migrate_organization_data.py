@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from django.core.management.base import BaseCommand
 
@@ -33,6 +34,17 @@ class Command(BaseCommand):
             default=False,
         )
 
+    def convert_to_object_list(self, data_list):
+        """
+        Converts a list of strings to a list of dictionaries with the string as the value.
+        This is used to convert email addresses and URLs to the expected format for the Organization model.
+        """
+        return [
+            {f"item_{idx + 1}": value}
+            for idx, value in enumerate(data_list)
+            if value.strip()
+        ]
+
     @staticmethod
     def extract_data_from_widgets(contact_us_widgets):
         org_addresses = list(
@@ -62,22 +74,37 @@ class Command(BaseCommand):
             .distinct()
         )
         if url_values:
-            for idx, value in enumerate(url_values):
+            for value in url_values:
                 urls = value.split(",")
-                for url in urls:
+                for idx, url in enumerate(urls):
                     if url.strip():
-                        org_urls.append({f"url_{idx + 1}": url.strip()})
+                        org_urls.append(
+                            {
+                                "id": str(uuid.uuid4()),
+                                "label": f"URL {idx + 1}",
+                                "value": url,
+                            }
+                        )
 
         return org_addresses, org_contact_messages, org_urls
 
     @staticmethod
     def extract_emails_from_site(site):
-        org_emails = []
-        if site.contact_email_old:
-            org_emails.append({"contact_email_old": site.contact_email_old})
+        site_emails = []
         if site.contact_emails:
-            for idx, contact_email in enumerate(site.contact_emails):
-                org_emails.append({f"contact_email_{idx + 1}": contact_email})
+            site_emails.extend(site.contact_emails)
+        if site.contact_email_old:
+            site_emails.append(site.contact_email_old)
+
+        org_emails = []
+        for idx, contact_email in enumerate(site_emails):
+            org_emails.append(
+                {
+                    "id": str(uuid.uuid4()),
+                    "label": f"Contact Email {idx + 1}",
+                    "value": contact_email,
+                }
+            )
         return org_emails
 
     def migrate_organization_data(self, site, dry_run=False):

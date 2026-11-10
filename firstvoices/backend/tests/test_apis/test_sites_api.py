@@ -106,6 +106,7 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
             "documents": f"{site_url}/documents",
             "features": f"{site_url}/features",
             "galleries": f"{site_url}/galleries",
+            "healthMetrics": f"{site_url}/health-metrics",
             "ignoredCharacters": f"{site_url}/ignored-characters",
             "images": f"{site_url}/images",
             "immersionLabels": f"{site_url}/immersion-labels",

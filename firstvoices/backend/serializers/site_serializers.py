@@ -93,6 +93,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
     documents = SiteViewLinkField(view_name="api:document-list")
     features = SiteViewLinkField(view_name="api:sitefeature-list")
     galleries = SiteViewLinkField(view_name="api:gallery-list")
+    health_metrics = SiteViewLinkField(view_name="api:health-metrics-list")
     ignored_characters = SiteViewLinkField(view_name="api:ignoredcharacter-list")
     images = SiteViewLinkField(view_name="api:image-list")
     immersion_labels = SiteViewLinkField(view_name="api:immersionlabel-list")
@@ -144,6 +145,7 @@ class SiteDetailSerializer(UpdateSerializerMixin, SiteSummarySerializer):
             "documents",
             "features",
             "galleries",
+            "health_metrics",
             "ignored_characters",
             "images",
             "immersion_labels",
