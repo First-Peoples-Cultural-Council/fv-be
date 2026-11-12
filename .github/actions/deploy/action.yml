@@ -168,9 +168,3 @@ runs:
         run: |
             helm list -n ${{  inputs.k8_namespace }};
             helm upgrade -f ./downloads/Values.${{ inputs.env }}.yaml ${{  inputs.helm_chart_name  }} ./helm/fv-be/ -n ${{  inputs.k8_namespace }}
-
-    - name: Restart fv-web and fv-be
-      shell: bash
-      run: |
-          kubectl rollout restart deployment django -n ${{ inputs.k8_namespace }}
-          kubectl rollout restart deployment fvweb -n ${{ inputs.k8_namespace }}
