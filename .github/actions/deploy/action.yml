@@ -173,9 +173,7 @@ runs:
       shell: bash
       run: |
           kubectl rollout restart deployment django -n ${{ inputs.k8_namespace }}
-          kubectl rollout status deployment django -n ${{ inputs.k8_namespace }} --timeout=10m
           kubectl rollout restart deployment fvweb -n ${{ inputs.k8_namespace }}
-          kubectl rollout status deployment fvweb -n ${{ inputs.k8_namespace }} --timeout=10m
 
     -   name: Upload Helm chart and tune tekton
         shell: bash
