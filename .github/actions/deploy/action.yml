@@ -6,9 +6,17 @@ inputs:
     required: true
   k8_namespace:
     required: true
+  helm_release_version:
+    required: true
   helm_chart_name:
     required: true
   aws_region:
+    required: true
+  tekton_be_pipeline:
+    required: true
+  tekton_fe_pipeline:
+    required: true
+  tekton_namespace:
     required: true
   aws_account:
     required: true
@@ -110,14 +118,72 @@ runs:
           echo "Current release status: $RELEASE_STATUS"
         done
 
+    - name: Prepare Kibana dashboard
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        SOURCE="./helm/fv-be/kibana/firstvoices-content-overview-pretty.ndjson"
+        OUTPUT="./helm/fv-be/kibana/firstvoices-content-overview.ndjson"
+
+        if [[ ! -f "$SOURCE" ]]; then
+          echo "ERROR: Kibana dashboard source not found: $SOURCE"
+          exit 1
+        fi
+
+        echo "Building deployable Kibana NDJSON..."
+
+        jq -c . "$SOURCE" > "$OUTPUT"
+
+        if [[ ! -s "$OUTPUT" ]]; then
+          echo "ERROR: Generated Kibana dashboard is empty"
+          exit 1
+        fi
+
+        object_count="$(wc -l < "$OUTPUT" | tr -d ' ')"
+
+        if [[ "$object_count" -lt 2 ]]; then
+          echo "ERROR: Generated dashboard contains only $object_count saved object(s)"
+          exit 1
+        fi
+
+        line_number=0
+
+        while IFS= read -r line; do
+          line_number=$((line_number + 1))
+
+          if ! printf '%s\n' "$line" | jq -e . >/dev/null; then
+            echo "ERROR: Invalid NDJSON on line $line_number"
+            exit 1
+          fi
+        done < "$OUTPUT"
+
+        echo "Kibana dashboard validated successfully."
+        echo "Saved objects: $object_count"
+        echo "Generated artifact:"
+        ls -lh "$OUTPUT"
+
     -   name: helm upgrade
         shell: bash
         run: |
             helm list -n ${{  inputs.k8_namespace }};
             helm upgrade -f ./downloads/Values.${{ inputs.env }}.yaml ${{  inputs.helm_chart_name  }} ./helm/fv-be/ -n ${{  inputs.k8_namespace }}
 
-    - name: Restart fv-be
+    - name: Restart fv-web and fv-be
       shell: bash
       run: |
           kubectl rollout restart deployment django -n ${{ inputs.k8_namespace }}
-          kubectl rollout status deployment django -n ${{ inputs.k8_namespace }} --timeout=2m
+          kubectl rollout status deployment django -n ${{ inputs.k8_namespace }} --timeout=10m
+          kubectl rollout restart deployment fvweb -n ${{ inputs.k8_namespace }}
+          kubectl rollout status deployment fvweb -n ${{ inputs.k8_namespace }} --timeout=10m
+
+    -   name: Upload Helm chart and tune tekton
+        shell: bash
+        run: |
+            helm package ./helm/fv-be
+            aws ecr get-login-password --region ${{ inputs.aws_region }} | helm registry login --username AWS --password-stdin ${{  inputs.aws_account }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com
+            helm push helm-fv-web-${{  inputs.helm_release_version }}.tgz oci://${{  inputs.aws_account }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com/
+            kubectl get pipeline ${{  inputs.tekton_be_pipeline  }} -n ${{  inputs.tekton_namespace  }} -o json | jq '.spec.params[4].default = "${{  inputs.helm_release_version }}"' > be_pipeline.json
+            kubectl patch pipeline ${{  inputs.tekton_be_pipeline  }}  --type=merge -n ${{  inputs.tekton_namespace  }} --patch-file be_pipeline.json
+            kubectl get pipeline ${{  inputs.tekton_fe_pipeline  }} -n ${{  inputs.tekton_namespace }} -o json | jq '.spec.params[2].default = "${{  inputs.helm_release_version }}"' > web_pipeline.json
+            kubectl patch pipeline ${{  inputs.tekton_fe_pipeline  }}  --type=merge -n ${{  inputs.tekton_namespace  }} --patch-file web_pipeline.json
