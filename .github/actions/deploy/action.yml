@@ -174,14 +174,3 @@ runs:
       run: |
           kubectl rollout restart deployment django -n ${{ inputs.k8_namespace }}
           kubectl rollout restart deployment fvweb -n ${{ inputs.k8_namespace }}
-
-    -   name: Upload Helm chart and tune tekton
-        shell: bash
-        run: |
-            helm package ./helm/fv-be
-            aws ecr get-login-password --region ${{ inputs.aws_region }} | helm registry login --username AWS --password-stdin ${{  inputs.aws_account }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com
-            helm push helm-fv-web-${{  inputs.helm_release_version }}.tgz oci://${{  inputs.aws_account }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com/
-            kubectl get pipeline ${{  inputs.tekton_be_pipeline  }} -n ${{  inputs.tekton_namespace  }} -o json | jq '.spec.params[4].default = "${{  inputs.helm_release_version }}"' > be_pipeline.json
-            kubectl patch pipeline ${{  inputs.tekton_be_pipeline  }}  --type=merge -n ${{  inputs.tekton_namespace  }} --patch-file be_pipeline.json
-            kubectl get pipeline ${{  inputs.tekton_fe_pipeline  }} -n ${{  inputs.tekton_namespace }} -o json | jq '.spec.params[2].default = "${{  inputs.helm_release_version }}"' > web_pipeline.json
-            kubectl patch pipeline ${{  inputs.tekton_fe_pipeline  }}  --type=merge -n ${{  inputs.tekton_namespace  }} --patch-file web_pipeline.json
