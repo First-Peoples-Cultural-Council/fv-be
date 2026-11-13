@@ -1,8 +1,11 @@
 from copy import deepcopy
+from datetime import timedelta
 
 import tablib
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
+from django.utils import timezone
+from import_export.results import RowResult
 
 from backend.importing.importers import (
     AudioImporter,
@@ -24,9 +27,15 @@ from backend.tasks.batch_utils import (
     verify_no_other_update_jobs_running,
 )
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
+from backend.tasks.import_job_tasks import delete_unused_media
 from backend.tasks.utils.reporting_utils import (
     attach_csv_to_update_job_report,
     generate_update_job_report,
+)
+from backend.tasks.utils.update_job_utils import (
+    SNAPSHOT_RELATIONS,
+    snapshot_entry,
+    snapshot_update_entries,
 )
 from backend.utils.uuid_utils import is_valid_uuid
 
@@ -272,6 +281,8 @@ def process_update_job_data(
         add_unknown_character_warnings(cleaned_data, update_job, report)
         add_field_value_removal_warnings(cleaned_data, update_job, report)
 
+    return dictionary_entry_update_result
+
 
 def run_update_job(data, update_job):
     """
@@ -283,14 +294,37 @@ def run_update_job(data, update_job):
     missing_referenced_media = get_missing_referenced_media(data, update_job.site.id)
 
     try:
-        process_update_job_data(
+        # Capture rollback state in the worker, immediately before applying updates.
+        _, _, cleaned_data = clean_update_csv(data)
+        before_states = snapshot_update_entries(cleaned_data, update_job)
+        result = process_update_job_data(
             data,
             update_job,
             missing_uploaded_media,
             missing_referenced_media,
             dry_run=False,
         )
+
+        # Keep snapshots only for successfully updated rows, excluding skipped/invalid rows.
+        updated_ids = [
+            row.object_id
+            for row in result.rows
+            if row.import_type == RowResult.IMPORT_TYPE_UPDATE
+        ]
+        update_job.change_snapshot = {
+            str(entry.id): {
+                "before_state": before_states[str(entry.id)],
+                "after_state": snapshot_entry(entry),
+            }
+            for entry in DictionaryEntry.objects.filter(
+                site=update_job.site, id__in=updated_ids
+            ).prefetch_related(*SNAPSHOT_RELATIONS)
+        }
+
+        # Start the rollback window after successful execution, not when the job was queued.
+        update_job.rollback_expires_at = timezone.now() + timedelta(days=7)
         update_job.status = UpdateJobStatus.COMPLETE
+        delete_unused_media(update_job)
     except Exception as e:
         logger.error(e)
         update_job.status = UpdateJobStatus.FAILED
@@ -336,6 +370,10 @@ def validate_update_job(update_job_id):
 
     update_job = UpdateJob.objects.get(id=update_job_id)
 
+    if update_job.status == UpdateJobStatus.ROLLED_BACK:
+        logger.warning("A rolled-back update job cannot be validated.")
+        return
+
     file = update_job.data.content.open().read().decode("utf-8-sig")
     data = tablib.Dataset().load(file, format="csv")
 
@@ -380,6 +418,10 @@ def confirm_update_job(update_job_id):
     )
 
     update_job = UpdateJob.objects.get(id=update_job_id)
+
+    if update_job.status == UpdateJobStatus.ROLLED_BACK:
+        logger.warning("A rolled-back update job cannot be confirmed.")
+        return
 
     file = update_job.data.content.open().read().decode("utf-8-sig")
     data = tablib.Dataset().load(file, format="csv")

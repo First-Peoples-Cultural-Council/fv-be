@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -627,11 +627,10 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
             validation_status=ImportJobStatus.COMPLETE,
         )
 
-        mock_objects = MagicMock()
-        mock_objects.delete.side_effect = Exception("General Exception")
+        factories.FileFactory(site=self.site, import_job=import_job)
         with patch(
-            "backend.tasks.import_job_tasks.File.objects.filter",
-            return_value=mock_objects,
+            "backend.tasks.import_job_tasks.File.delete",
+            side_effect=Exception("General Exception"),
         ):
             confirm_import_job(import_job.id)
 
