@@ -391,6 +391,8 @@ Note: use `python manage.py {command} -h` to list all the args and their use.
 Management commands added for data cleanup purposes with niche use cases:
 - `python manage.py convert_draftjs_to_html` - Converts all draftJS content to sanitized HTML for all models that have a draftJS field.
 - `python manage.py convert_heic` - Converts existing HEIC files to JPEG or PNG format.
+- `python manage.py delete_orphaned_thumbnail_files` - Deletes orphaned ImageFile records that the app generated as a complete set of thumbnails. Partial sets and uploaded files are reported but left in place. Supports `--dry-run`.
+- `python manage.py report_orphaned_image_files` - Reports ImageFile records not referenced by any Image or Video, split into generated thumbnails and uploaded photos. Read-only.
 - `python manage.py merge_duplicate_speakers` - Merges duplicate speakers based on case-insensitive exact matches on the name, within the same site.
 
 
