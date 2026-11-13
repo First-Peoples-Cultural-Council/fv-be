@@ -11,7 +11,6 @@ from backend.permissions import predicates
 class JoinRequestStatus(models.IntegerChoices):
     # enum intentionally has gaps to allow future changes to keep sequential order
     CANCELLED = -30, _("Cancelled")
-    REJECTED = -20, _("Rejected")  # notify user
     IGNORED = -10, _("Ignored")
     PENDING = 0, _("Pending")
     APPROVED = 10, _("Approved")  # notify user
