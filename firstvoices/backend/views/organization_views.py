@@ -142,6 +142,7 @@ class OrganizationViewSet(
         )
 
         data = self.get_serializer(default_organization).data
+        data["default_organization"] = True
 
         paginator = self.paginator
         paginator.request = self.request
