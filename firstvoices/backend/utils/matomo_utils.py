@@ -10,7 +10,7 @@ from backend.views.exceptions import (
 )
 
 
-def get_monthly_visitors(site_slug, report_date):
+def _get_matomo_configuration():
     api_url = settings.MATOMO_API_URL
     token = settings.MATOMO_AUTH_TOKEN
     site_id = settings.MATOMO_SITE_ID
@@ -40,6 +40,12 @@ def get_monthly_visitors(site_slug, report_date):
             raise MatomoConfigurationError
     except (TypeError, ValueError):
         raise MatomoConfigurationError from None
+
+    return api_url, token, site_id, tracked_site_url
+
+
+def get_monthly_visitors(site_slug, report_date):
+    api_url, token, site_id, tracked_site_url = _get_matomo_configuration()
 
     # Construct the full site URL and encode it for use in the Matomo segment filter.
     site_url = f"{tracked_site_url.rstrip('/')}/{site_slug}"
