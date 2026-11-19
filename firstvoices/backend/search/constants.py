@@ -57,7 +57,7 @@ ES_NOT_FOUND_ERROR = (
 ES_PAGE_SIZE = 25
 
 # Maximum page size
-ES_MAX_RESULTS = 100
+ES_MAX_RESULTS = 50
 
 # Retry policy
 ES_RETRY_POLICY = {

@@ -23,7 +23,7 @@ class FasterCountPagination(Paginator):
 
 class PageNumberPagination(pagination.PageNumberPagination):
     page_size_query_param = "pageSize"
-    max_page_size = 1000
+    max_page_size = ES_MAX_RESULTS
     django_paginator_class = FasterCountPagination
 
     def get_paginated_response(self, data):
@@ -43,9 +43,11 @@ class PageNumberPagination(pagination.PageNumberPagination):
                     ("next_url", self.get_next_link()),
                     (
                         "previous",
-                        self.page.previous_page_number()
-                        if self.page.has_previous()
-                        else None,
+                        (
+                            self.page.previous_page_number()
+                            if self.page.has_previous()
+                            else None
+                        ),
                     ),
                     ("previous_url", self.get_previous_link()),
                     ("results", data),
