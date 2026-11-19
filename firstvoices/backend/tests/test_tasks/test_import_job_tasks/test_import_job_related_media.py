@@ -629,7 +629,7 @@ class TestImportJobRelatedMedia(BatchRelatedMediaMixin):
 
         factories.FileFactory(site=self.site, import_job=import_job)
         with patch(
-            "backend.tasks.import_job_tasks.File.delete",
+            "backend.tasks.batch_utils.File.delete",
             side_effect=Exception("General Exception"),
         ):
             confirm_import_job(import_job.id)

@@ -3,6 +3,7 @@ import re
 import sys
 
 import tablib
+from celery.utils.log import get_task_logger
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db.models import Q
 from django.utils.text import get_valid_filename
@@ -26,6 +27,33 @@ from backend.models.update_jobs import (
     UpdateJobRowStatus,
 )
 from backend.utils.character_utils import clean_input
+
+
+def delete_unused_media(job):
+    """
+    Delete files uploaded for an import or update job but not associated with a media model.
+    """
+    logger = get_task_logger(__name__)
+    related_job_filter = (
+        {"import_job": job} if isinstance(job, ImportJob) else {"update_job": job}
+    )
+
+    try:
+        unused_files = (
+            ImageFile.objects.filter(**related_job_filter, image__isnull=True),
+            VideoFile.objects.filter(**related_job_filter, video__isnull=True),
+            File.objects.filter(
+                **related_job_filter, audio__isnull=True, document__isnull=True
+            ),
+        )
+        for files in unused_files:
+            for file in files:
+                # Instance deletion also removes the uploaded object from storage.
+                file.delete()
+    except Exception as e:
+        logger.warning(
+            f"An exception occurred while trying to delete unused media files. Error: {e}"
+        )
 
 
 def verify_no_other_jobs_running(current_job):

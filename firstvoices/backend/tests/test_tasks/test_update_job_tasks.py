@@ -833,7 +833,7 @@ class TestBulkUpdate(BatchRelatedMediaMixin):
 
         # Simulate a deletion failure for an unused upload.
         with patch(
-            "backend.tasks.import_job_tasks.File.delete",
+            "backend.tasks.batch_utils.File.delete",
             side_effect=Exception("General Exception"),
         ):
             confirm_update_job(update_job.id)

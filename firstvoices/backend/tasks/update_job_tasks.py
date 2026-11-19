@@ -18,6 +18,7 @@ from backend.models import Alphabet, DictionaryEntry
 from backend.models.update_jobs import UpdateJob, UpdateJobStatus
 from backend.tasks.batch_utils import (
     create_or_append_update_error_row,
+    delete_unused_media,
     get_missing_referenced_entries,
     get_missing_referenced_media,
     get_missing_uploaded_media_for_update_job,
@@ -27,7 +28,6 @@ from backend.tasks.batch_utils import (
     verify_no_other_update_jobs_running,
 )
 from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
-from backend.tasks.import_job_tasks import delete_unused_media
 from backend.tasks.utils.reporting_utils import (
     attach_csv_to_update_job_report,
     generate_update_job_report,
