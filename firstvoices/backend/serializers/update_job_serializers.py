@@ -8,6 +8,7 @@ from backend.models.update_jobs import (
     UpdateJobStatus,
 )
 from backend.serializers import fields
+from backend.serializers.base_serializers import base_timestamp_fields
 from backend.serializers.import_job_serializers import (
     ImportJobDetailSerializer,
     ImportJobSerializer,
@@ -68,16 +69,12 @@ class UpdateJobDetailSerializer(UpdateJobSerializer, ImportJobDetailSerializer):
 class RollbackJobSerializer(serializers.ModelSerializer):
     class Meta:
         model = RollbackJob
-        fields = (
+        fields = base_timestamp_fields + (
             "id",
             "update_job",
             "status",
             "task_id",
             "message",
             "conflicts",
-            "created_by",
-            "created",
-            "last_modified",
-            "last_modified_by",
         )
         read_only_fields = fields
