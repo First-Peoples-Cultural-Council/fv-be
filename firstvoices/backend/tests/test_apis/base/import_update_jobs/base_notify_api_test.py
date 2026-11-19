@@ -104,3 +104,22 @@ class BaseImportUpdateJobNotifyApi(BaseSiteContentApiTest):
         assert response.status_code == 400
         response_data = json.loads(response.content)
         assert self.ALREADY_READY_ERROR_MESSAGE in response_data
+
+    @pytest.mark.parametrize(
+        "status",
+        [ImportJobStatus.ACCEPTED, ImportJobStatus.STARTED, ImportJobStatus.COMPLETE],
+    )
+    def test_cannot_notify_queued_running_or_completed_job(self, status):
+        self.job.status = status
+        self.job.save()
+
+        response = self.client.post(self.get_notify_endpoint())
+
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+        assert response_data == [
+            "A queued, running, or completed job cannot be marked ready for processing."
+        ]
+        self.job.refresh_from_db()
+        assert self.job.status == status
+        assert len(mail.outbox) == 0

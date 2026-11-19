@@ -192,6 +192,8 @@ class TestOrganizationEndpoints(BaseUncontrolledSiteContentApiTest):
             assert url["label"] == "FirstVoices Support"
             assert url["value"] == "https://www.firstvoices.com/support"
 
+        assert response_data["results"][0]["defaultOrganization"]
+
     @pytest.mark.django_db
     def test_malformed_list_fields_400_create(self):
         site, user = factories.get_site_with_authenticated_member(

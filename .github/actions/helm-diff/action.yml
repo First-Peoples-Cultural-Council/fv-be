@@ -8,6 +8,8 @@ inputs:
     required: true
   k8_namespace:
     required: true
+  helm_release_version:
+    required: true
   helm_chart_name:
     required: true
 
@@ -25,17 +27,74 @@ runs:
           version: v3.19.2
         id: install
 
-    -   name: Check helm diff
-        shell: bash
-        run: |
-            helm list -n ${{  inputs.k8_namespace }};
-            helm plugin install https://github.com/databus23/helm-diff >/dev/null;
-            mkdir uploads; touch ./uploads/minus.txt; touch ./uploads/plus.txt; touch ./uploads/diff.txt
-            helm diff  --debug upgrade -f ./helm/fv-be/Values.${{  inputs.env  }}.yaml ${{  inputs.helm_chart_name }} ./helm/fv-be/ -n ${{  inputs.k8_namespace  }} > ./uploads/diff.txt
-            grep -E '^\+' ./uploads/diff.txt | sed 's/^.\{1\}//' > ./uploads/plus.txt
-            grep -E '^\-' ./uploads/diff.txt | sed 's/^.\{1\}//' > ./uploads/minus.txt
-            chmod +x ./diff_finder.py
-            python3 ./diff_finder.py
+    - name: Prepare Kibana dashboard
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        SOURCE="./helm/fv-be/kibana/firstvoices-content-overview-pretty.ndjson"
+        OUTPUT="./helm/fv-be/kibana/firstvoices-content-overview.ndjson"
+
+        if [[ ! -f "$SOURCE" ]]; then
+          echo "ERROR: Kibana dashboard source not found: $SOURCE"
+          exit 1
+        fi
+
+        echo "Building Kibana dashboard NDJSON..."
+
+        jq -c . "$SOURCE" > "$OUTPUT"
+
+        if [[ ! -s "$OUTPUT" ]]; then
+          echo "ERROR: Generated Kibana dashboard is empty"
+          exit 1
+        fi
+
+        OBJECT_COUNT="$(wc -l < "$OUTPUT" | tr -d ' ')"
+
+        if [[ "$OBJECT_COUNT" -lt 2 ]]; then
+          echo "ERROR: Generated dashboard contains only $OBJECT_COUNT saved object(s)"
+          exit 1
+        fi
+
+        while IFS= read -r line; do
+          printf '%s\n' "$line" | jq -e . >/dev/null
+        done < "$OUTPUT"
+
+        echo "Kibana dashboard validated: $OBJECT_COUNT saved objects"
+        ls -lh "$OUTPUT"
+    - name: Check helm diff
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        helm list -n ${{ inputs.k8_namespace }}
+
+        helm plugin install \
+          https://github.com/databus23/helm-diff \
+          >/dev/null
+
+        mkdir -p uploads
+        touch ./uploads/minus.txt
+        touch ./uploads/plus.txt
+        touch ./uploads/diff.txt
+
+        helm diff --debug upgrade \
+          -f ./helm/fv-be/Values.${{ inputs.env }}.yaml \
+          ${{ inputs.helm_chart_name }} \
+          ./helm/fv-be/ \
+          -n ${{ inputs.k8_namespace }} \
+          > ./uploads/diff.txt
+
+        grep -E '^\+' ./uploads/diff.txt \
+          | sed 's/^.\{1\}//' \
+          > ./uploads/plus.txt || true
+
+        grep -E '^\-' ./uploads/diff.txt \
+          | sed 's/^.\{1\}//' \
+          > ./uploads/minus.txt || true
+
+        chmod +x ./diff_finder.py
+        python3 ./diff_finder.py
             echo "******************************************************************************"
             echo "NOTE OF CAUTION!:"
             echo "The diff printed above is a compact and readable version of the original Helm diff. It works the best when changes to the chart are minor."

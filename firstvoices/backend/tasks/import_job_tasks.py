@@ -13,11 +13,10 @@ from backend.importing.importers import (
     VideoImporter,
 )
 from backend.models.dictionary import DictionaryEntry, DictionaryEntryLink
-from backend.models.files import File
 from backend.models.import_jobs import ImportJob, ImportJobReportRow, ImportJobStatus
-from backend.models.media import ImageFile, VideoFile
 from backend.tasks.batch_utils import (
     create_or_append_error_row,
+    delete_unused_media,
     get_missing_referenced_entries,
     get_missing_referenced_media,
     get_missing_uploaded_media,
@@ -313,29 +312,6 @@ def dry_run_import_job(data, import_job):
         import_job.validation_status = ImportJobStatus.FAILED
     finally:
         import_job.save()
-
-
-def delete_unused_media(import_job):
-    """
-    Checks for, and deletes, any media files that were uploaded for the import job but not associated with a media model
-    i.e. Not used in the import.
-    """
-    logger = get_task_logger(__name__)
-
-    try:
-        ImageFile.objects.filter(
-            import_job_id=import_job.id, image__isnull=True
-        ).delete()
-        VideoFile.objects.filter(
-            import_job_id=import_job.id, video__isnull=True
-        ).delete()
-        File.objects.filter(
-            import_job_id=import_job.id, audio__isnull=True, document__isnull=True
-        ).delete()
-    except Exception as e:
-        logger.warning(
-            f"An exception occurred while trying to delete unused media files. Error: {e}"
-        )
 
 
 @shared_task

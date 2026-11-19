@@ -36,6 +36,36 @@ runs:
           --file-path Values.${{ inputs.env }}.yaml \
           --query fileContent \
           --output text | base64 -d > ./helm/fv-be/Values.${{ inputs.env }}.yaml;
+        ls ./helm/fv-be/
+
+    - name: Prepare Kibana dashboard
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        SOURCE="./helm/fv-be/kibana/firstvoices-content-overview-pretty.ndjson"
+        OUTPUT="./helm/fv-be/kibana/firstvoices-content-overview.ndjson"
+        jq -c . "$SOURCE" > "$OUTPUT"
+
+        if [[ ! -s "$OUTPUT" ]]; then
+          echo "ERROR: Generated Kibana dashboard is empty"
+          exit 1
+        fi
+
+        OBJECT_COUNT="$(wc -l < "$OUTPUT" | tr -d ' ')"
+
+        if [[ "$OBJECT_COUNT" -lt 2 ]]; then
+          echo "ERROR: Generated dashboard contains only $OBJECT_COUNT saved object(s)"
+          exit 1
+        fi
+
+        while IFS= read -r line; do
+          printf '%s\n' "$line" | jq -e . >/dev/null
+        done < "$OUTPUT"
+
+        echo "Kibana dashboard validated: $OBJECT_COUNT saved objects"
+        ls -lh "$OUTPUT"
+
     - name: Prepare env vars
       shell: bash
       run: |
@@ -103,6 +133,7 @@ runs:
         echo "fvwebImage: $(get_image_digest_ref fv-web)" >> "$VALUES_FILE"
         echo "fvbeImage: $(get_image_digest_ref fv-be)" >> "$VALUES_FILE"
         echo "staticImage: $(get_image_digest_ref fv-be-static)" >> "$VALUES_FILE"
+        echo "smtpImage: $(get_image_digest_ref smtp-sidecar)" >> "$VALUES_FILE"
 
         echo "REMOTE_HELM_RELEASE_VERSION=$(aws ecr describe-images --repository-name helm-fv-web \
           --query 'sort_by(imageDetails, &imagePushedAt)[-1].imageTags[0]' \
