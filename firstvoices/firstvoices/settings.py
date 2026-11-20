@@ -275,6 +275,13 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
 }
 
+MATOMO_API_URL = os.getenv("MATOMO_API_URL")
+MATOMO_AUTH_TOKEN = os.getenv("MATOMO_AUTH_TOKEN")
+MATOMO_SITE_ID = os.getenv(
+    "MATOMO_SITE_ID"
+)  # Matomo website/property ID, not a Language Site ID from our database.
+MATOMO_TRACKED_SITE_URL = os.getenv("MATOMO_TRACKED_SITE_URL")
+
 # Fixtures directory for initial data
 FIXTURES_DIR = BASE_DIR / "backend" / "fixtures"
 
