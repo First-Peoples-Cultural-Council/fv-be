@@ -126,18 +126,6 @@ from backend.views.utils import (
             404: OpenApiResponse(description=doc_strings.error_404),
         },
     ),
-    reject=extend_schema(
-        description=_("Reject a join request."),
-        request=inline_serializer(name="Join Request Rejection", fields={}),
-        responses={
-            200: OpenApiResponse(
-                description=doc_strings.success_200_edit,
-            ),
-            400: OpenApiResponse(description=doc_strings.error_400_validation),
-            403: OpenApiResponse(description=doc_strings.error_403),
-            404: OpenApiResponse(description=doc_strings.error_404),
-        },
-    ),
 )
 class JoinRequestViewSet(
     SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet
@@ -158,7 +146,6 @@ class JoinRequestViewSet(
         "update": "change",
         "approve": "change",  # custom actions use change permission
         "ignore": "change",
-        "reject": "change",
     }
 
     def get_detail_queryset(self):
@@ -223,37 +210,6 @@ class JoinRequestViewSet(
         self.update_join_request_status(
             join_request, JoinRequestStatus.IGNORED, request.user
         )
-
-        serializer = self.get_serializer(join_request)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=["post"])
-    def reject(self, request, site_slug=None, pk=None):
-        join_request = self.get_object()
-
-        self.update_join_request_status(
-            join_request, JoinRequestStatus.REJECTED, request.user
-        )
-
-        subject = (
-            f"Update on your request to join {join_request.site.title} on FirstVoices"
-        )
-        message = (
-            f"Thank you for requesting to join the {join_request.site.title} site on FirstVoices. "
-            "A community administrator has reviewed your request. At this time, your request to view private content "
-            "has not been approved. The site may not be accepting members at this time.\n\n"
-            "Your request may be re-reviewed at a later date.\n\n"
-            "All decisions regarding requests to view private content are made solely by community-based language "
-            "administrators.\n\n"
-            "If you think this may be a technical error, you can contact FirstVoices staff at "
-            "hello@firstvoices.com.\n\n"
-        )
-
-        try:
-            send_email_task.apply_async((subject, message, [join_request.user.email]))
-        except redis.exceptions.ConnectionError as e:
-            logger = logging.getLogger(__name__)
-            logger.error(f"Could not queue task. Error: {e}")
 
         serializer = self.get_serializer(join_request)
         return Response(serializer.data, status=status.HTTP_200_OK)
