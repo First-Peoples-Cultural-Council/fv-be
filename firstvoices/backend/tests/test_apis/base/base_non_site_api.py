@@ -67,6 +67,18 @@ class NonSiteListApiTestMixin(NonSiteListEndpointTestMixin):
             instance
         )
 
+    @pytest.mark.django_db
+    def test_page_size_limit_enforced(self):
+        for _ in range(60):
+            self.create_minimal_instance(visibility=Visibility.PUBLIC)
+
+        response = self.client.get(self.get_list_endpoint() + f"?pageSize={100}")
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) <= 50
+        assert response_data["pageSize"] == 50
+
 
 class NonSiteDetailEndpointTestMixin:
     API_DETAIL_VIEW = ""  # E.g., "api:site-detail"

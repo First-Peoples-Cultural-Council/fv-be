@@ -35,6 +35,11 @@ class TestWordOfTheDayEndpoint(SiteContentListEndpointMixin, BaseSiteContentApiT
         self.client.force_authenticate(user=self.non_member_user)
         self.today = datetime.today()
 
+    @pytest.mark.skip(reason="Create minimal instance not implemented")
+    def test_page_size_limit_enforced(self):
+        # Test skipped because the create_minimal_instance method is not relevant for this API.
+        pass
+
     @pytest.mark.django_db
     def test_list_empty(self):
         # Overriding since there is no pagination class for this view

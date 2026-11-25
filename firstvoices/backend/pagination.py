@@ -10,6 +10,8 @@ from rest_framework.response import Response
 
 from backend.search.constants import ES_MAX_RESULTS, ES_PAGE_SIZE
 
+API_PAGE_SIZE_LIMIT = 50
+
 
 class FasterCountPagination(Paginator):
     @cached_property
@@ -23,7 +25,7 @@ class FasterCountPagination(Paginator):
 
 class PageNumberPagination(pagination.PageNumberPagination):
     page_size_query_param = "pageSize"
-    max_page_size = ES_MAX_RESULTS
+    max_page_size = API_PAGE_SIZE_LIMIT
     django_paginator_class = FasterCountPagination
 
     def get_paginated_response(self, data):

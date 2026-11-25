@@ -41,6 +41,11 @@ class TestWordsyEndpoint(SiteContentListEndpointMixin, BaseSiteContentApiTest):
         CharacterVariantFactory.create(title="B", base_character=char_b)
         CharacterVariantFactory.create(title="C", base_character=char_c)
 
+    @pytest.mark.skip(reason="Create minimal instance not implemented")
+    def test_page_size_limit_enforced(self):
+        # Test skipped because the create_minimal_instance method is not relevant for this API.
+        pass
+
     @pytest.mark.django_db
     def test_list_empty(self):
         # Overriding since there is no pagination class for this view

@@ -283,6 +283,25 @@ class TestStoryPageEndpoint(RelatedMediaTestMixin, BaseControlledSiteContentApiT
         ] == self.get_expected_list_response_item_no_email_access(page, site)
 
     @pytest.mark.django_db
+    def test_page_size_limit_enforced(self):
+        site = self.create_site_with_non_member(Visibility.PUBLIC)
+        story = factories.StoryFactory.create(site=site, visibility=Visibility.PUBLIC)
+
+        factories.StoryPageFactory.create_batch(
+            60, story=story, visibility=Visibility.PUBLIC
+        )
+
+        response = self.client.get(
+            self.get_list_endpoint(site_slug=site.slug, story_id=str(story.id))
+            + f"?pageSize={100}"
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) <= 50
+        assert response_data["pageSize"] == 50
+
+    @pytest.mark.django_db
     def test_create_invalid_400(self):
         site, _ = factories.get_site_with_app_admin(self.client, Visibility.PUBLIC)
         story = factories.StoryFactory.create(site=site, visibility=site.visibility)
