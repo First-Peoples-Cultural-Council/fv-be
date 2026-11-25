@@ -18,6 +18,7 @@ from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import FVPermissionViewSetMixin
 
 from ..models.constants import Role
+from ..pagination import LargePageNumberPagination
 from .utils import (
     get_select_related_media_fields,
     get_site_content_select_related_fields,
@@ -73,6 +74,7 @@ class SiteViewSet(FVPermissionViewSetMixin, ModelViewSet):
     _cached_site = None
     http_method_names = ["get", "put", "patch"]
     lookup_field = "slug"
+    pagination_class = LargePageNumberPagination
     serializer_class = SiteDetailWriteSerializer
 
     def get_object(self):

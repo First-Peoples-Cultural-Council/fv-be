@@ -7,6 +7,7 @@ from backend.models.media import Person
 from backend.serializers.media_serializers import PersonSerializer
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
+from ..pagination import LargePageNumberPagination
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
 
@@ -104,6 +105,7 @@ from .api_doc_variables import id_parameter, site_slug_parameter
 )
 class PersonViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
     serializer_class = PersonSerializer
+    pagination_class = LargePageNumberPagination
 
     def get_queryset(self):
         site = self.get_validated_site()

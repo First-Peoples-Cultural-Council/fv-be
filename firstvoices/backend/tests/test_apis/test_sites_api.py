@@ -191,6 +191,22 @@ class TestSitesEndpoints(MediaTestMixin, ReadOnlyNonSiteApiTest):
         assert str(sites["team"].id) in response_sites
         assert str(sites["hidden"].id) in response_sites
 
+    @pytest.mark.django_db
+    def test_page_size_limit_enforced(self):
+        """
+        Overriding as the site API use LargePageNumberPagination, which has a larger page size limit than the default.
+        """
+        self.client.force_authenticate(user=get_non_member_user())
+        factories.SiteFactory.create_batch(size=600)
+
+        response = self.client.get(self.get_list_endpoint())
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+
+        assert response_data["count"] == 600
+        assert len(response_data["results"]) <= 500
+        assert response_data["pageSize"] == 50
+
     @pytest.mark.parametrize("get_user", [get_anonymous_user, get_non_member_user])
     @pytest.mark.django_db
     def test_list_permissions_for_non_members(self, get_user):

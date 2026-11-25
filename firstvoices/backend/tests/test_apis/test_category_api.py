@@ -18,11 +18,14 @@ from backend.tests.factories import (
 )
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseUncontrolledSiteContentApiTest,
+    LargePageSizeListApiTestMixin,
 )
 from backend.tests.utils import find_object_by_id
 
 
-class TestCategoryEndpoints(BaseUncontrolledSiteContentApiTest):
+class TestCategoryEndpoints(
+    LargePageSizeListApiTestMixin, BaseUncontrolledSiteContentApiTest
+):
     """
     End-to-end tests that the category endpoints have the expected behaviour.
     """

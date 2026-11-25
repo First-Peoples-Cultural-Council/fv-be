@@ -22,6 +22,7 @@ from backend.serializers.category_serializers import (
 )
 from backend.views.base_views import FVPermissionViewSetMixin, SiteContentViewSetMixin
 
+from ..pagination import LargePageNumberPagination
 from . import doc_strings
 from .api_doc_variables import id_parameter, site_slug_parameter
 from .utils import get_site_content_select_related_fields
@@ -151,6 +152,7 @@ from .utils import get_site_content_select_related_fields
 )
 class CategoryViewSet(SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet):
     valid_inputs = TypeOfDictionaryEntry.values
+    pagination_class = LargePageNumberPagination
 
     def get_detail_queryset(self):
         site = self.get_validated_site()

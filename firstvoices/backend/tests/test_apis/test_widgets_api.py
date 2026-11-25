@@ -8,9 +8,14 @@ from backend.tests import factories
 from backend.tests.test_apis.base.base_controlled_site_api import (
     BaseControlledLanguageAdminOnlySiteContentAPITest,
 )
+from backend.tests.test_apis.base.base_uncontrolled_site_api import (
+    LargePageSizeListApiTestMixin,
+)
 
 
-class TestSiteWidgetEndpoint(BaseControlledLanguageAdminOnlySiteContentAPITest):
+class TestSiteWidgetEndpoint(
+    LargePageSizeListApiTestMixin, BaseControlledLanguageAdminOnlySiteContentAPITest
+):
     API_LIST_VIEW = "api:sitewidget-list"
     API_DETAIL_VIEW = "api:sitewidget-detail"
 

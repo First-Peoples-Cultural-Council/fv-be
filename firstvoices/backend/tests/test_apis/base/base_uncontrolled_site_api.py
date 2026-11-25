@@ -137,6 +137,28 @@ class SiteContentListApiTestMixin(SiteContentListEndpointMixin):
         assert response_data["pageSize"] == 50
 
 
+class LargePageSizeListApiTestMixin:
+    """
+    For use with SiteContentListApiTestMixin
+    """
+
+    @pytest.mark.django_db
+    def test_page_size_limit_enforced(self):
+        site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
+
+        for _ in range(600):
+            self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
+
+        response = self.client.get(
+            self.get_list_endpoint(site.slug) + f"?pageSize={1000}"
+        )
+
+        assert response.status_code == 200
+        response_data = json.loads(response.content)
+        assert len(response_data["results"]) <= 500
+        assert response_data["pageSize"] == 500
+
+
 class SiteContentListPermissionTestMixin:
     """Test cases for view permissions by site and content visibility. Use with SiteContentListApiTestMixin"""
 

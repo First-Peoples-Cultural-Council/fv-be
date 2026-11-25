@@ -58,6 +58,7 @@ ES_PAGE_SIZE = 25
 
 # Maximum page size
 ES_MAX_RESULTS = 50
+ES_LARGE_MAX_RESULTS = 500
 
 # Retry policy
 ES_RETRY_POLICY = {
