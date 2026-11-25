@@ -1,19 +1,26 @@
+from datetime import timedelta
 from unittest.mock import patch
 
 import pytest
 import tablib
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 
 from backend.models import Audio
 from backend.models.files import File
 from backend.models.jobs import JobStatus
 from backend.models.media import Document, Image, ImageFile, Video, VideoFile
-from backend.models.update_jobs import RollbackJob, UpdateJobStatus
-from backend.tasks.rollback_job_tasks import rollback_update_job
+from backend.models.update_jobs import RollbackJob, UpdateJob, UpdateJobStatus
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
+from backend.tasks.rollback_job_tasks import (
+    delete_expired_update_job_snapshots,
+    rollback_update_job,
+)
 from backend.tasks.update_job_tasks import confirm_update_job, validate_update_job
 from backend.tasks.utils.rollback_cleanup_utils import cleanup_rollback_media
 from backend.tasks.utils.update_job_utils import snapshot_entry, snapshot_update_entries
 from backend.tests import factories
+from backend.tests.test_tasks.base_task_test import IgnoreTaskResultsMixin
 
 
 @pytest.mark.django_db
@@ -549,3 +556,137 @@ class TestRollbackJob:
         update_job.delete()
 
         assert not RollbackJob.objects.filter(id=rollback_job.id).exists()
+
+
+@pytest.mark.django_db
+class TestDeleteExpiredUpdateJobSnapshotsTask(IgnoreTaskResultsMixin):
+    TASK = delete_expired_update_job_snapshots
+
+    @pytest.fixture
+    def celery_eager_no_propagation(self, settings):
+        settings.CELERY_TASK_EAGER_PROPAGATES = False
+
+    def get_valid_task_args(self):
+        return None
+
+    def test_no_snapshots_eligible_for_deletion(self, caplog):
+        result = delete_expired_update_job_snapshots.apply()
+
+        assert result.state == "SUCCESS"
+        assert (
+            "No eligible update job snapshots found for deletion. No action taken."
+            in caplog.text
+        )
+        assert ASYNC_TASK_START_TEMPLATE in caplog.text
+        assert ASYNC_TASK_END_TEMPLATE in caplog.text
+
+    def test_clears_expired_snapshots_and_preserves_expiry_timestamp(self, caplog):
+        expired_at = timezone.now() - timedelta(days=1)
+        expired_job = factories.UpdateJobFactory.create(
+            status=UpdateJobStatus.COMPLETE,
+            change_snapshot={"entry-1": {}},
+            rollback_expires_at=expired_at,
+        )
+        empty_snapshot_job = factories.UpdateJobFactory.create(
+            status=UpdateJobStatus.COMPLETE,
+            change_snapshot={},
+            rollback_expires_at=expired_at,
+        )
+
+        result = delete_expired_update_job_snapshots.apply()
+
+        assert result.state == "SUCCESS"
+
+        expired_job.refresh_from_db()
+        empty_snapshot_job.refresh_from_db()
+
+        assert expired_job.change_snapshot is None
+        assert expired_job.rollback_expires_at == expired_at
+
+        assert empty_snapshot_job.change_snapshot is None
+        assert empty_snapshot_job.rollback_expires_at == expired_at
+
+        assert "Cleared expired snapshots for 2 update jobs." in caplog.text
+        assert ASYNC_TASK_START_TEMPLATE in caplog.text
+        assert ASYNC_TASK_END_TEMPLATE in caplog.text
+
+    def test_keeps_unexpired_snapshots(self):
+        # Create an unexpired update job and a job with no expiry to ensure their snapshots are not cleared
+        snapshot = {"entry-1": {}}
+        unexpired_job = factories.UpdateJobFactory.create(
+            status=UpdateJobStatus.COMPLETE,
+            change_snapshot=snapshot,
+            rollback_expires_at=timezone.now() + timedelta(days=1),
+        )
+        no_expiry_job = factories.UpdateJobFactory.create(
+            status=UpdateJobStatus.COMPLETE,
+            change_snapshot=snapshot,
+            rollback_expires_at=None,
+        )
+
+        result = delete_expired_update_job_snapshots.apply()
+
+        assert result.state == "SUCCESS"
+
+        unexpired_job.refresh_from_db()
+        no_expiry_job.refresh_from_db()
+
+        assert unexpired_job.change_snapshot == snapshot
+        assert no_expiry_job.change_snapshot == snapshot
+
+    @pytest.mark.parametrize(
+        "rollback_status",
+        [JobStatus.ACCEPTED, JobStatus.STARTED],
+    )
+    def test_keeps_snapshots_with_active_rollback(self, rollback_status):
+        snapshot = {"entry-1": {}}
+        update_job = factories.UpdateJobFactory.create(
+            status=UpdateJobStatus.COMPLETE,
+            change_snapshot=snapshot,
+            rollback_expires_at=timezone.now() - timedelta(days=1),
+        )
+        factories.RollbackJobFactory.create(
+            update_job=update_job,
+            status=rollback_status,
+        )
+
+        result = delete_expired_update_job_snapshots.apply()
+
+        assert result.state == "SUCCESS"
+        update_job.refresh_from_db()
+        assert update_job.change_snapshot == snapshot
+
+    @pytest.mark.parametrize(
+        "rollback_status",
+        [JobStatus.COMPLETE, JobStatus.FAILED],
+    )
+    def test_clears_expired_snapshots_with_finished_rollback(self, rollback_status):
+        update_job = factories.UpdateJobFactory.create(
+            status=UpdateJobStatus.ROLLED_BACK,
+            change_snapshot={"entry-1": {}},
+            rollback_expires_at=timezone.now() - timedelta(days=1),
+        )
+        factories.RollbackJobFactory.create(
+            update_job=update_job,
+            status=rollback_status,
+        )
+
+        result = delete_expired_update_job_snapshots.apply()
+
+        assert result.state == "SUCCESS"
+        update_job.refresh_from_db()
+        assert update_job.change_snapshot is None
+
+    def test_delete_expired_snapshots_error(self, caplog, celery_eager_no_propagation):
+        with patch.object(
+            UpdateJob.objects, "filter", side_effect=Exception("Mocked exception")
+        ):
+            result = delete_expired_update_job_snapshots.apply()
+
+            assert result.state == "FAILURE"
+            assert (
+                "Error deleting expired update job snapshots: Mocked exception"
+                in caplog.text
+            )
+            assert ASYNC_TASK_START_TEMPLATE in caplog.text
+            assert ASYNC_TASK_END_TEMPLATE in caplog.text

@@ -1,6 +1,7 @@
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from django.db import transaction
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from backend.models import DictionaryEntry
@@ -9,6 +10,7 @@ from backend.models.update_jobs import RollbackJob, UpdateJob, UpdateJobStatus
 from backend.search.indexing.dictionary_index import DictionaryEntryDocumentManager
 from backend.search.tasks.index_manager_tasks import request_sync_in_index
 from backend.tasks.batch_utils import verify_no_other_jobs_running
+from backend.tasks.constants import ASYNC_TASK_END_TEMPLATE, ASYNC_TASK_START_TEMPLATE
 from backend.tasks.utils.rollback_cleanup_utils import cleanup_rollback_media
 from backend.tasks.utils.update_job_utils import (
     SNAPSHOT_RELATIONS,
@@ -102,3 +104,35 @@ def rollback_update_job(rollback_job_id):
         return
 
     cleanup_rollback_media(rollback_job_id)
+
+
+@shared_task(bind=True)
+def delete_expired_update_job_snapshots(self):
+    """
+    Clears change_snapshot on update jobs whose rollback window has expired.
+    """
+    logger = get_task_logger(__name__)
+    logger.info(ASYNC_TASK_START_TEMPLATE)
+
+    try:
+        expired_jobs = UpdateJob.objects.filter(
+            rollback_expires_at__lte=timezone.now(),
+            change_snapshot__isnull=False,
+        ).exclude(
+            rollback_job__status__in=[JobStatus.ACCEPTED, JobStatus.STARTED],
+        )
+
+        cleared_count = expired_jobs.update(change_snapshot=None)
+        if cleared_count:
+            logger.info(f"Cleared expired snapshots for {cleared_count} update jobs.")
+        else:
+            logger.info(
+                "No eligible update job snapshots found for deletion. No action taken."
+            )
+
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+    except Exception as e:
+        self.state = "FAILURE"
+        logger.error(f"Error deleting expired update job snapshots: {e}")
+        logger.info(ASYNC_TASK_END_TEMPLATE)
+        raise e

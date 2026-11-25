@@ -29,6 +29,7 @@ def setup_periodic_tasks(sender, **kwargs):
     from backend.tasks.export_job_tasks import delete_old_exports
     from backend.tasks.join_request_tasks import delete_old_join_requests
     from backend.tasks.mtd_export_tasks import check_sites_for_mtd_sync
+    from backend.tasks.rollback_job_tasks import delete_expired_update_job_snapshots
 
     # Create the PeriodicTask and schedule for the MTD export task if they don't exist
     if not PeriodicTask.objects.filter(name="check_sites_for_mtd_sync").exists():
@@ -72,4 +73,23 @@ def setup_periodic_tasks(sender, **kwargs):
             crontab=schedule,
             name="delete_old_join_requests",
             task=delete_old_join_requests.name,
+        )
+
+    # Create the PeriodicTask and schedule to delete expired update job snapshots
+    if not PeriodicTask.objects.filter(
+        name="delete_expired_update_job_snapshots"
+    ).exists():
+        schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute=0,
+            hour=0,
+            day_of_week="0",  # Sunday
+            day_of_month="*",
+            month_of_year="*",
+            timezone=TIMEZONE,
+        )
+
+        PeriodicTask.objects.create(
+            crontab=schedule,
+            name="delete_expired_update_job_snapshots",
+            task=delete_expired_update_job_snapshots.name,
         )
