@@ -146,7 +146,7 @@ class LargePageSizeListApiTestMixin:
     def test_page_size_limit_enforced(self):
         site = factories.SiteFactory.create(visibility=Visibility.PUBLIC)
 
-        for _ in range(600):
+        for _ in range(400):
             self.create_minimal_instance(site=site, visibility=Visibility.PUBLIC)
 
         response = self.client.get(
@@ -155,8 +155,8 @@ class LargePageSizeListApiTestMixin:
 
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert len(response_data["results"]) <= 500
-        assert response_data["pageSize"] == 500
+        assert len(response_data["results"]) <= 350
+        assert response_data["pageSize"] == 350
 
 
 class SiteContentListPermissionTestMixin:

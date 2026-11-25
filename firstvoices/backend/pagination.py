@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from backend.search.constants import ES_LARGE_MAX_RESULTS, ES_MAX_RESULTS, ES_PAGE_SIZE
 
 API_PAGE_SIZE_LIMIT = 50
-API_EXTENDED_PAGE_SIZE_LIMIT = 500
+API_EXTENDED_PAGE_SIZE_LIMIT = 350
 
 
 class FasterCountPagination(Paginator):

@@ -5,6 +5,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from backend.models import DictionaryEntry
 from backend.models.characters import Character, IgnoredCharacter
+from backend.pagination import LargePageNumberPagination
 from backend.serializers.character_serializers import (
     CharacterDetailSerializer,
     IgnoredCharacterSerializer,
@@ -82,6 +83,7 @@ class CharactersViewSet(
 
     http_method_names = ["get", "put", "patch"]
     serializer_class = CharacterDetailSerializer
+    pagination_class = LargePageNumberPagination
 
     def get_queryset(self):
         site = self.get_validated_site()

@@ -15,6 +15,7 @@ from backend.tests.test_apis.base.base_media_test import (
 )
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseReadOnlyUncontrolledSiteContentApiTest,
+    LargePageSizeListApiTestMixin,
     SiteContentPatchApiTestMixin,
 )
 from backend.tests.test_apis.test_dictionary_api import (
@@ -26,6 +27,7 @@ class TestCharactersEndpoints(
     RelatedMediaTestMixin,
     WriteApiTestMixin,
     SiteContentPatchApiTestMixin,
+    LargePageSizeListApiTestMixin,
     BaseReadOnlyUncontrolledSiteContentApiTest,
 ):
     """
