@@ -1,4 +1,7 @@
+import json
+
 import pytest
+from django.core import mail
 
 from backend.models.update_jobs import UpdateJob, UpdateJobStatus
 from backend.tests import factories
@@ -24,3 +27,20 @@ class TestUpdateJobNotifyApi(BaseImportUpdateJobNotifyApi):
         "The update job is already marked ready for processing."
     )
     SUPPORT_EMAIL = SUPPORT_USER_EMAIL
+
+    @pytest.mark.parametrize("validation_status", [None, UpdateJobStatus.COMPLETE])
+    def test_cannot_notify_rolled_back_job(self, validation_status):
+        self.job.status = UpdateJobStatus.ROLLED_BACK
+        self.job.validation_status = validation_status
+        self.job.save()
+
+        response = self.client.post(self.get_notify_endpoint())
+
+        assert response.status_code == 400
+        response_data = json.loads(response.content)
+        assert response_data == [
+            "A rolled-back job cannot be marked ready for processing."
+        ]
+        self.job.refresh_from_db()
+        assert self.job.status == UpdateJobStatus.ROLLED_BACK
+        assert len(mail.outbox) == 0

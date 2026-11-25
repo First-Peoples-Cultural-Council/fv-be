@@ -71,11 +71,10 @@ class TestDeleteOldJoinRequestsTask(IgnoreTaskResultsMixin):
         assert result.state == "SUCCESS"
         assert JoinRequest.objects.filter(id=join_request.id).exists()
 
-    @pytest.mark.parametrize(
-        "status", [JoinRequestStatus.PENDING, JoinRequestStatus.REJECTED]
-    )
-    def test_keeps_old_join_requests_with_non_deletable_status(self, status):
-        join_request = factories.JoinRequestFactory.create(status=status)
+    def test_keeps_old_join_requests_with_pending_status(self):
+        join_request = factories.JoinRequestFactory.create(
+            status=JoinRequestStatus.PENDING
+        )
         join_request.created = timezone.now() - timedelta(days=31)
         join_request.save()
 

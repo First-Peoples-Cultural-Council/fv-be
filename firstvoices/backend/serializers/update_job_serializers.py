@@ -1,6 +1,14 @@
 from rest_framework import serializers
 
-from backend.models.update_jobs import UpdateJob, UpdateJobReport, UpdateJobReportRow
+from backend.models.update_jobs import (
+    RollbackJob,
+    UpdateJob,
+    UpdateJobReport,
+    UpdateJobReportRow,
+    UpdateJobStatus,
+)
+from backend.serializers import fields
+from backend.serializers.base_serializers import base_timestamp_fields
 from backend.serializers.import_job_serializers import (
     ImportJobDetailSerializer,
     ImportJobSerializer,
@@ -25,6 +33,7 @@ class UpdateReportSerializer(ImportReportSerializer):
 
 
 class UpdateJobSerializer(ImportJobSerializer):
+    status = fields.EnumLabelField(enum=UpdateJobStatus, read_only=True)
     mode = serializers.SerializerMethodField(read_only=True)
     validation_report = UpdateReportSerializer(read_only=True)
 
@@ -55,3 +64,17 @@ class UpdateJobDetailSerializer(UpdateJobSerializer, ImportJobDetailSerializer):
     class Meta:
         model = UpdateJob
         fields = UpdateJobSerializer.Meta.fields + ("media",)
+
+
+class RollbackJobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RollbackJob
+        fields = base_timestamp_fields + (
+            "id",
+            "update_job",
+            "status",
+            "task_id",
+            "message",
+            "conflicts",
+        )
+        read_only_fields = fields

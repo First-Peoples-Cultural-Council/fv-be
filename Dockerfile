@@ -4,6 +4,7 @@ ARG caddy_image=caddy:2.11.2-alpine
 FROM $python_image AS python-base
 ENV DEBUG_DISABLE=True
 ENV PATH="/opt/venv/bin:$PATH"
+RUN apk upgrade --no-cache
 
 FROM python-base AS django-builder
 
@@ -16,9 +17,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     "setuptools>=78.1.1"
 
 WORKDIR /app
-RUN apk update && \
-    apk upgrade sqlite-libs && \
-    apk add --no-cache \
+RUN apk add --no-cache \
     build-base \
     ffmpeg \
     git \
@@ -39,6 +38,7 @@ RUN ["python3", "manage.py", "collectstatic"]
 
 # select with --target static-runtime at build time
 FROM $caddy_image AS static-runtime
+RUN apk upgrade --no-cache
 COPY --from=django-builder /app/Caddyfile /etc/caddy
 COPY --from=static-collector /app/firstvoices/static /srv
 
@@ -46,9 +46,7 @@ COPY --from=static-collector /app/firstvoices/static /srv
 FROM python-base AS django-runtime
 
 WORKDIR /app
-RUN apk update && \
-    apk upgrade sqlite-libs && \
-    apk add --no-cache \
+RUN apk add --no-cache \
     ffmpeg \
     libmagic \
     libstdc++ \
