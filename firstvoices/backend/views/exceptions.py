@@ -21,3 +21,21 @@ class ContactUsError(APIException):
     )
 
     default_code = "contact_us_error"
+
+
+class MatomoConfigurationError(APIException):
+    status_code = 503
+    default_detail = "Analytics is not configured."
+    default_code = "analytics_not_configured"
+
+
+class MatomoError(APIException):
+    status_code = 502
+    default_detail = "Analytics is temporarily unavailable."
+    default_code = "analytics_unavailable"
+
+
+class MatomoTimeoutError(APIException):
+    status_code = 504
+    default_detail = "The analytics service did not respond in time."
+    default_code = "analytics_timeout"

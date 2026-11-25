@@ -1,6 +1,7 @@
 from rest_framework_nested.routers import NestedSimpleRouter
 
 from backend.router import CustomRouter
+from backend.views.analytics_views import SiteAnalyticsViewSet
 from backend.views.audio_views import AudioViewSet
 from backend.views.bulkvisibilityjob_views import BulkVisibilityJobViewSet
 from backend.views.category_views import CategoryViewSet
@@ -56,6 +57,7 @@ ROUTER.register(r"sites", SiteViewSet, basename="site")
 
 # site-level APIs
 sites_router = NestedSimpleRouter(ROUTER, r"sites", lookup="site")
+sites_router.register(r"analytics", SiteAnalyticsViewSet, basename="analytics")
 sites_router.register(r"audio", AudioViewSet, basename="audio")
 sites_router.register(
     r"bulk-visibility", BulkVisibilityJobViewSet, basename="bulk-visibility"

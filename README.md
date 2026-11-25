@@ -64,7 +64,7 @@ License: Apache Software License 2.0
    - `AWS_SECRET_ACCESS_KEY`
    - `MEDIA_UPLOAD_S3_BUCKET`
    - `MEDIA_UPLOAD_S3_REGION`
-1. Configure optional environment variables as needed (used for the reset-local-database.sh script, Sentry and Elasticsearch):
+1. (Optional) Configure environment variables as needed (used for the reset-local-database.sh script, Sentry and Elasticsearch):
    - `SENTRY_DSN`: the data source name that tells the Sentry SDK where to send events (to upload to the dashboard). If this is not set then events will not be sent to a dashboard.
    - `SENTRY_ENVIRONMENT`: a string specifying the name of the environment to tag Sentry events with (defaults to `production` if not set).
    - `SENTRY_RELEASE`: a custom release version to tag Sentry events with (defaults to the commit SHA if not set).
@@ -79,6 +79,11 @@ License: Apache Software License 2.0
      - You can add `export <variable name>=<variable value>` to the `<name for your venv>/bin/activate` file.
    - If using [direnv](https://direnv.net/)
      - You can add `export <variable name>=<variable value>` to the `.envrc` file in the root of you project.
+1. (Optional) Configure Matomo visitor analytics:
+   - `MATOMO_API_URL`: Analytics API endpoint
+   - `MATOMO_AUTH_TOKEN`
+   - `MATOMO_SITE_ID`: the Matomo website/property ID. This is not the SiteId from the DB.
+   - `MATOMO_TRACKED_SITE_URL`: canonical HTTPS origin recorded by the tracker, for example `https://www.firstvoices.com`. Should not include a Language Site path.
 1. Apply migration
    - Navigate to the `firstvoices` directory: `cd firstvoices`
    - From the `firstvoices` directory: `python manage.py migrate`
