@@ -196,7 +196,7 @@ class TestImportJob(IgnoreTaskResultsImportMixin):
         )
         assert empty_games_flag.exclude_from_games is False
         empty_kids_flag = DictionaryEntry.objects.get(
-            title="test_default_values_empty_include_on_kids_site"
+            title="test_default_values_empty_include_in_kids_site"
         )
         assert empty_kids_flag.exclude_from_kids is False
 

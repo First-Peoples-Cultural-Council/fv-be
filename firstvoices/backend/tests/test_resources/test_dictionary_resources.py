@@ -17,7 +17,7 @@ class TestDictionaryEntryImport:
         headers = [
             # these headers should match the defined template for batch uploads
             "id,created,created_by,last_modified,last_modified_by,site,"
-            "title,visibility,type,legacy_batch_filename,include_on_kids_site,include_in_games,part_of_speech,"
+            "title,visibility,type,legacy_batch_filename,include_in_kids_site,include_in_games,part_of_speech,"
             "related_video_links"
         ]
         table = tablib.import_set("\n".join(headers + data), format="csv")

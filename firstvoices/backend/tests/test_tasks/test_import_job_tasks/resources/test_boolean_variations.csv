@@ -1,4 +1,4 @@
-﻿title,type,include_in_games,include_on_kids_site
+﻿title,type,include_in_games,include_in_kids_site
 test_boolean_variations_word_1,word,  TRUE,TRUE
 test_boolean_variations_phrase_1,phrase,True  ,TRUE
 test_boolean_variations_word_2,word,  TrUE  ,TRUE

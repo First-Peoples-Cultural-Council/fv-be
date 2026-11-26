@@ -773,10 +773,10 @@ class TestImportJobRelatedMediaDryRun(BatchRelatedMediaMixin):
         )
         assert error_row.errors[0] == expected_error_message
 
-        # invalid include_on_kids_site
+        # invalid include_in_kids_site
         error_row = validation_report.rows.get(row_number=5)
         expected_error_message = (
-            "Invalid value in include_on_kids_site column. Expected 'true' or 'false'."
+            "Invalid value in include_in_kids_site column. Expected 'true' or 'false'."
         )
         assert error_row.errors[0] == expected_error_message
 

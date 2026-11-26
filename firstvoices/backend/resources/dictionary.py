@@ -103,9 +103,9 @@ class DictionaryEntryResource(
         widget=InvertedBooleanFieldWidget(column="include_in_games", default=False),
     )
     exclude_from_kids = fields.Field(
-        column_name="include_on_kids_site",
+        column_name="include_in_kids_site",
         attribute="exclude_from_kids",
-        widget=InvertedBooleanFieldWidget(column="include_on_kids_site", default=False),
+        widget=InvertedBooleanFieldWidget(column="include_in_kids_site", default=False),
     )
 
     def __init__(
