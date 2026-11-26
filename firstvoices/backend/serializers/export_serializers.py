@@ -15,7 +15,7 @@ class DictionaryEntryExportResultSerializer(
     part_of_speech = serializers.StringRelatedField()
     categories = serializers.StringRelatedField(many=True)
     include_in_games = InvertedBooleanField(source="exclude_from_games", read_only=True)
-    include_on_kids_site = InvertedBooleanField(
+    include_in_kids_site = InvertedBooleanField(
         source="exclude_from_kids", read_only=True
     )
     audio_ids = CommaSeparatedIDsField(source="related_audio", read_only=True)
@@ -55,7 +55,7 @@ class DictionaryEntryExportResultSerializer(
             "video_embed_links",
             "related_dictionary_entries",
             "include_in_games",
-            "include_on_kids_site",
+            "include_in_kids_site",
             "external_system",
         )
 

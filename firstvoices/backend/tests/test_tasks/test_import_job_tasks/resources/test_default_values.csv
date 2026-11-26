@@ -1,4 +1,4 @@
-﻿title,type,visibility,include_in_games,include_on_kids_site
+﻿title,type,visibility,include_in_games,include_in_kids_site
 test_default_values_empty_visibility,phrase  ,,FALSE,TRUE
 test_default_values_empty_include_in_games,WORD,  puBLIc  ,,TRUE
-test_default_values_empty_include_on_kids_site,  PhRasE  ,teaM  ,FALSE,
+test_default_values_empty_include_in_kids_site,  PhRasE  ,teaM  ,FALSE,

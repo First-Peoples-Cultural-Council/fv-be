@@ -1,4 +1,4 @@
-﻿title,type,visibility,acknowledgement,include_in_games,include_on_kids_site,part_of_speech,Ignorable_comments_column
+﻿title,type,visibility,acknowledgement,include_in_games,include_in_kids_site,part_of_speech,Ignorable_comments_column
 test_skip_rows_with_erroneous_values_phrase_1,phrase,Team,123,FALSE,TRUE,Suffix,Valid entry for control
 test_skip_rows_with_erroneous_values_word_1,xyz,Public,123,TRUE,FALSE,Adjective,invalid type entry
 ,word,Public,123,FALSE,TRUE,Adjective,Missing title

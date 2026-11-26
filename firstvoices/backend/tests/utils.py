@@ -173,7 +173,7 @@ def get_maximum_dictionary_entry_columns():
         "type",
         "visibility",
         "include_in_games",
-        "include_on_kids_site",
+        "include_in_kids_site",
         "translation",
         "translation_2",
         "translation_3",

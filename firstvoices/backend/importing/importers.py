@@ -412,7 +412,7 @@ class DictionaryEntryImporter(BaseImporter):
         "title",
         "type",
         "visibility",
-        "include_on_kids_site",
+        "include_in_kids_site",
         "include_in_games",
         "external_system",
         "external_system_entry_id",

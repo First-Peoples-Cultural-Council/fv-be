@@ -178,7 +178,7 @@ class TestImportJobDryRun(IgnoreTaskResultsImportMixin):
 
     def test_mix_of_invalid_rows(self):
         # Tests for invalid values present in the following columns
-        # type, title, visibility, boolean(include_in_games, include_on_kids_site), part_of_speech
+        # type, title, visibility, boolean(include_in_games, include_in_kids_site), part_of_speech
         # Also verify the CSV generated
 
         file_content = get_sample_file(
@@ -353,7 +353,7 @@ class TestImportJobDryRun(IgnoreTaskResultsImportMixin):
         validation_error_row = validation_report.rows.first()
         assert validation_error_row.row_number == 13
         assert (
-            "Invalid value in include_on_kids_site column. Expected 'true' or 'false'."
+            "Invalid value in include_in_kids_site column. Expected 'true' or 'false'."
             in validation_error_row.errors
         )
 

@@ -1,4 +1,4 @@
-﻿id,title,type,visibility,category,include_in_games,include_on_kids_site,part_of_speech,Ignorable_comments_column
+﻿id,title,type,visibility,category,include_in_games,include_in_kids_site,part_of_speech,Ignorable_comments_column
 ba93662a-e1bc-4c0b-8fa1-12b0bc108be1,Control,phrase,Team,Animals,FALSE,TRUE,Suffix,Valid entry for control
 768c920c-38a9-4aea-821a-e1c0739c00d4,Invalid type,xyz,Public,Animals,TRUE,FALSE,Adjective,invalid type
 adcc9c74-3ab2-4a31-8063-5ba5007be507,Invalid vis,phrase,notAValidVis,Animals,FALSE,TRUE,Suffix,invalid visibility
