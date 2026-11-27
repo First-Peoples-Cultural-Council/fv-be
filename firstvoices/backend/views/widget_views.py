@@ -5,6 +5,7 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_
 from rest_framework.viewsets import ModelViewSet
 
 from backend.models.widget import SiteWidget, WidgetSettings
+from backend.pagination import LargePageNumberPagination
 from backend.serializers.widget_serializers import SiteWidgetDetailSerializer
 from backend.views import doc_strings
 from backend.views.api_doc_variables import id_parameter, site_slug_parameter
@@ -101,6 +102,7 @@ class SiteWidgetViewSet(
     SiteContentViewSetMixin, FVPermissionViewSetMixin, ModelViewSet
 ):
     serializer_class = SiteWidgetDetailSerializer
+    pagination_class = LargePageNumberPagination
 
     def get_queryset(self):
         site = self.get_validated_site()

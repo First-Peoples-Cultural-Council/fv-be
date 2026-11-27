@@ -23,6 +23,7 @@ from backend.views import doc_strings
 from backend.views.api_doc_variables import inline_site_doc_detail_serializer
 from backend.views.base_views import ThrottlingMixin
 
+from ..pagination import LargeSearchPageNumberPagination
 from ..search.validators import get_valid_boolean
 from ..serializers.site_serializers import SiteSummarySerializer
 from .base_search_views import BaseSearchViewSet
@@ -97,6 +98,7 @@ class LanguageViewSet(ThrottlingMixin, BaseSearchViewSet):
         "Language": LanguageSerializer,
         "Site": LanguagePlaceholderSerializer,
     }
+    pagination_class = LargeSearchPageNumberPagination
 
     def get_search_params(self):
         """

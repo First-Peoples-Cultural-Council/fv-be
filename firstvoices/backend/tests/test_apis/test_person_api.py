@@ -3,10 +3,13 @@ from backend.tests import factories
 from backend.tests.factories import PersonFactory
 from backend.tests.test_apis.base.base_uncontrolled_site_api import (
     BaseUncontrolledSiteContentApiTest,
+    LargePageSizeListApiTestMixin,
 )
 
 
-class TestPeopleEndpoints(BaseUncontrolledSiteContentApiTest):
+class TestPeopleEndpoints(
+    LargePageSizeListApiTestMixin, BaseUncontrolledSiteContentApiTest
+):
     """
     End-to-end tests that the /people endpoints have the expected behaviour.
     """

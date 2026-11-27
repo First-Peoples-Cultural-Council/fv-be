@@ -251,6 +251,11 @@ class TestStatsEndpoint(SiteContentListApiTestMixin, BaseSiteContentApiTest):
         # Stats API does not create a model instance
         pass
 
+    @pytest.mark.skip(reason="Create minimal instance not implemented")
+    def test_page_size_limit_enforced(self):
+        # Test skipped because the create_minimal_instance method is not relevant for this API.
+        pass
+
     @pytest.mark.django_db
     @pytest.mark.parametrize("entry_type", TypeOfDictionaryEntry)
     def test_aggregate_stats_dictionary_public(self, entry_type):

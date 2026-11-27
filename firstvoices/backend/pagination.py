@@ -8,7 +8,10 @@ from rest_framework import pagination
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
-from backend.search.constants import ES_MAX_RESULTS, ES_PAGE_SIZE
+from backend.search.constants import ES_LARGE_MAX_RESULTS, ES_MAX_RESULTS, ES_PAGE_SIZE
+
+API_PAGE_SIZE_LIMIT = 50
+API_EXTENDED_PAGE_SIZE_LIMIT = 350
 
 
 class FasterCountPagination(Paginator):
@@ -23,7 +26,7 @@ class FasterCountPagination(Paginator):
 
 class PageNumberPagination(pagination.PageNumberPagination):
     page_size_query_param = "pageSize"
-    max_page_size = 1000
+    max_page_size = API_PAGE_SIZE_LIMIT
     django_paginator_class = FasterCountPagination
 
     def get_paginated_response(self, data):
@@ -43,15 +46,21 @@ class PageNumberPagination(pagination.PageNumberPagination):
                     ("next_url", self.get_next_link()),
                     (
                         "previous",
-                        self.page.previous_page_number()
-                        if self.page.has_previous()
-                        else None,
+                        (
+                            self.page.previous_page_number()
+                            if self.page.has_previous()
+                            else None
+                        ),
                     ),
                     ("previous_url", self.get_previous_link()),
                     ("results", data),
                 ]
             )
         )
+
+
+class LargePageNumberPagination(PageNumberPagination):
+    max_page_size = API_EXTENDED_PAGE_SIZE_LIMIT
 
 
 class ElasticSearchPaginator(Paginator):
@@ -129,3 +138,9 @@ class SearchPageNumberPagination(PageNumberPagination):
         if number < 1:
             return override_value
         return number
+
+
+class LargeSearchPageNumberPagination(SearchPageNumberPagination):
+    def __init__(self):
+        super().__init__()
+        self.max_page_size = ES_LARGE_MAX_RESULTS

@@ -108,7 +108,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
     "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
     "DEFAULT_PAGINATION_CLASS": "backend.pagination.PageNumberPagination",
-    "PAGE_SIZE": 100,
+    "PAGE_SIZE": 50,
     "DEFAULT_THROTTLE_CLASSES": [
         "backend.views.utils.BurstRateThrottle",
         "backend.views.utils.SustainedRateThrottle",
